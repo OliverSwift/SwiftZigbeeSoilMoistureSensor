@@ -30,10 +30,13 @@
 #define TEMPLATE_INIT_BASIC_POWER_SOURCE    ZB_ZCL_BASIC_POWER_SOURCE_DC_SOURCE
 
 /* LED indicating that device successfully joined Zigbee network. */
-#define ZIGBEE_NETWORK_STATE_LED            DK_LED3
+#define ZIGBEE_NETWORK_STATE_LED            DK_LED1
 
 /* LED used for device identification. */
-#define IDENTIFY_LED                        DK_LED1
+#define IDENTIFY_LED                        DK_LED2
+
+/* LED used for device on_off. */
+#define ON_OFF_LED			    DK_LED3
 
 /* Button used to enter the Identify mode. */
 #define IDENTIFY_MODE_BUTTON                DK_BTN1_MSK
@@ -252,11 +255,7 @@ static void on_off_set_value(zb_bool_t on)
 		(zb_uint8_t *)&on,
 		ZB_FALSE);
 
-	if (on) {
-		dk_set_led(IDENTIFY_LED, 1);
-	} else {
-		dk_set_led(IDENTIFY_LED, 0);
-	}
+	dk_set_led(ON_OFF_LED, on);
 }
 
 /**@brief Callback function for handling ZCL commands.
