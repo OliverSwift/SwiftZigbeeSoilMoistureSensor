@@ -330,8 +330,14 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	}
 }
 
+int adc_setup(void); // In adc.c
+int32_t adc_run(void); // In adc.c
+
 int main(void)
 {
+	LOG_INF("Starting ADC reading on AIN0");
+	adc_setup();
+
 	LOG_INF("Starting Zigbee application template example");
 
 	/* Initialize */
@@ -353,6 +359,12 @@ int main(void)
 	zigbee_enable();
 
 	LOG_INF("Zigbee application template started");
+
+	while(1) {
+	    adc_run();
+
+	    k_sleep(K_MSEC(1000));
+	}
 
 	return 0;
 }
