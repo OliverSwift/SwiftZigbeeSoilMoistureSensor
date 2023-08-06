@@ -69,23 +69,12 @@ int32_t adc_run()
 		return -1;
 	}
 
-	/*
-	 * If using differential mode, the 16 bit value
-	 * in the ADC sample buffer should be a signed 2's
-	 * complement value.
-	 */
-	if (adc_channels[0].channel_cfg.differential) {
-		val_mv = (int32_t)((int16_t)buf);
-	} else {
-		val_mv = (int32_t)buf;
-	}
-	printk("%"PRId32, val_mv);
+	val_mv = (int32_t)((int16_t)buf);
 
 	err = adc_raw_to_millivolts_dt(&adc_channels[0], &val_mv);
 
-	/* conversion to mV may not be supported, skip if not */
 	if (err < 0) {
-		printk(" (value in mV not available)\n");
+		printk(" (N/A)\n");
 	} else {
 		printk(" = %"PRId32" mV\n", val_mv);
 	}
