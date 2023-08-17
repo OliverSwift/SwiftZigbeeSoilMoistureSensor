@@ -18,7 +18,7 @@
 #include <zigbee/zigbee_error_handler.h>
 #include <zigbee/zigbee_app_utils.h>
 #include <zb_nrf_platform.h>
-#include "zb_range_extender.h"
+#include "zb_swift_device.h"
 
 
 /* Device endpoint, used to receive ZCL commands. */
@@ -80,9 +80,9 @@ ZB_ZCL_DECLARE_ON_OFF_ATTRIB_LIST(
 	on_off_attr_list,
 	&dev_ctx.on_off_attr.on_off);
 
-ZB_DECLARE_RANGE_EXTENDER_CLUSTER_LIST(app_template_clusters, basic_attr_list, identify_attr_list, on_off_attr_list);
+ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_template_clusters, basic_attr_list, identify_attr_list, on_off_attr_list);
 
-ZB_DECLARE_RANGE_EXTENDER_EP(
+ZB_DECLARE_SWIFT_DEVICE_EP(
 	app_template_ep,
 	APP_TEMPLATE_ENDPOINT,
 	app_template_clusters);

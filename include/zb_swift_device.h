@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef ZB_RANGE_EXTENDER_H
-#define ZB_RANGE_EXTENDER_H 1
+#ifndef ZB_SWIFT_DEVICE_H
+#define ZB_SWIFT_DEVICE_H 1
 
 /**
- *  @defgroup ZB_DEFINE_DEVICE_RANGE_EXTENDER Range Extender
+ *  @defgroup ZB_DEFINE_DEVICE_SWIFT_DEVICE Range Extender
  *  @{
  *  @details
  *      - @ref ZB_ZCL_IDENTIFY \n
@@ -16,24 +16,24 @@
  */
 
 /** Range Extender Device ID*/
-#define ZB_RANGE_EXTENDER_DEVICE_ID 0x0008
+#define ZB_SWIFT_DEVICE_DEVICE_ID 0x0008
 
 /** Range extender device version */
-#define ZB_DEVICE_VER_RANGE_EXTENDER 0
+#define ZB_DEVICE_VER_SWIFT_DEVICE 0
 
 /** @cond internals_doc */
 
 /** Range extender IN (server) clusters number */
-#define ZB_RANGE_EXTENDER_IN_CLUSTER_NUM 3
+#define ZB_SWIFT_DEVICE_IN_CLUSTER_NUM 3
 
 /** Range extender OUT (client) clusters number */
-#define ZB_RANGE_EXTENDER_OUT_CLUSTER_NUM 0
+#define ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM 0
 
-#define ZB_RANGE_EXTENDER_CLUSTER_NUM \
-	(ZB_RANGE_EXTENDER_IN_CLUSTER_NUM + ZB_RANGE_EXTENDER_OUT_CLUSTER_NUM)
+#define ZB_SWIFT_DEVICE_CLUSTER_NUM \
+	(ZB_SWIFT_DEVICE_IN_CLUSTER_NUM + ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM)
 
 /** Number of attribute for reporting on Range extender device */
-#define ZB_RANGE_EXTENDER_REPORT_ATTR_COUNT 0
+#define ZB_SWIFT_DEVICE_REPORT_ATTR_COUNT 0
 
 /** @endcond */ /* internals_doc */
 
@@ -43,7 +43,7 @@
  * @param basic_attr_list - attribute list for Basic cluster
  * @param identify_attr_list - attribute list for Identify cluster
  */
-#define ZB_DECLARE_RANGE_EXTENDER_CLUSTER_LIST(			      \
+#define ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(			      \
 		cluster_list_name,				      \
 		basic_attr_list,				      \
 		identify_attr_list,				      \
@@ -82,14 +82,14 @@ zb_zcl_cluster_desc_t cluster_list_name[] =			      \
  * @param in_clust_num - number of supported input clusters
  * @param out_clust_num - number of supported output clusters
  */
-#define ZB_ZCL_DECLARE_RANGE_EXTENDER_SIMPLE_DESC(ep_name, ep_id, in_clust_num, out_clust_num) \
+#define ZB_ZCL_DECLARE_SWIFT_DEVICE_SIMPLE_DESC(ep_name, ep_id, in_clust_num, out_clust_num) \
 	ZB_DECLARE_SIMPLE_DESC(in_clust_num, out_clust_num);				       \
 	ZB_AF_SIMPLE_DESC_TYPE(in_clust_num, out_clust_num) simple_desc_##ep_name =	       \
 	{										       \
 		ep_id,									       \
 		ZB_AF_HA_PROFILE_ID,							       \
-		ZB_RANGE_EXTENDER_DEVICE_ID,						       \
-		ZB_DEVICE_VER_RANGE_EXTENDER,						       \
+		ZB_SWIFT_DEVICE_DEVICE_ID,						       \
+		ZB_DEVICE_VER_SWIFT_DEVICE,						       \
 		0,									       \
 		in_clust_num,								       \
 		out_clust_num,								       \
@@ -108,9 +108,9 @@ zb_zcl_cluster_desc_t cluster_list_name[] =			      \
  * @param ep_id - endpoint ID
  * @param cluster_list - endpoint cluster list
  */
-#define ZB_DECLARE_RANGE_EXTENDER_EP(ep_name, ep_id, cluster_list)		      \
-	ZB_ZCL_DECLARE_RANGE_EXTENDER_SIMPLE_DESC(ep_name, ep_id,		      \
-		ZB_RANGE_EXTENDER_IN_CLUSTER_NUM, ZB_RANGE_EXTENDER_OUT_CLUSTER_NUM); \
+#define ZB_DECLARE_SWIFT_DEVICE_EP(ep_name, ep_id, cluster_list)		      \
+	ZB_ZCL_DECLARE_SWIFT_DEVICE_SIMPLE_DESC(ep_name, ep_id,		      \
+		ZB_SWIFT_DEVICE_IN_CLUSTER_NUM, ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM); \
 	ZB_AF_DECLARE_ENDPOINT_DESC(ep_name, ep_id, ZB_AF_HA_PROFILE_ID, 0, NULL,     \
 		ZB_ZCL_ARRAY_SIZE(cluster_list, zb_zcl_cluster_desc_t), cluster_list, \
 			(zb_af_simple_desc_1_1_t *)&simple_desc_##ep_name,	      \
@@ -119,4 +119,4 @@ zb_zcl_cluster_desc_t cluster_list_name[] =			      \
 
 /*! @} */
 
-#endif /* ZB_RANGE_EXTENDER_H */
+#endif /* ZB_SWIFT_DEVICE_H */
