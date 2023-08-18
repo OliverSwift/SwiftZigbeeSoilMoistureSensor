@@ -26,7 +26,7 @@
 
 / {
 	chosen {
-		zephyr,shell-uart = &cdc_acm_uart;
+		//ncs,zboss-trace-uart = &cdc_acm_uart;
 	};
 	zephyr,user {
                 io-channels = <&adc 0>;

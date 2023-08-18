@@ -53,6 +53,7 @@ struct zb_device_ctx {
 	zb_zcl_basic_attrs_ext_t basic_attr;
 	zb_zcl_on_off_attrs_t on_off_attr;
 	zb_zcl_identify_attrs_t identify_attr;
+	zb_zcl_rel_humidity_attrs_t rel_humidity_attr;
 };
 
 /* Zigbee device application context storage. */
@@ -80,7 +81,14 @@ ZB_ZCL_DECLARE_ON_OFF_ATTRIB_LIST(
 	on_off_attr_list,
 	&dev_ctx.on_off_attr.on_off);
 
-ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_template_clusters, basic_attr_list, identify_attr_list, on_off_attr_list);
+ZB_ZCL_DECLARE_REL_HUMIDITY_MEASUREMENT_ATTRIB_LIST(
+	rel_humidity_attr_list,
+	&dev_ctx.rel_humidity_attr.value,
+	&dev_ctx.rel_humidity_attr.min_value,
+	&dev_ctx.rel_humidity_attr.max_value
+);
+
+ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_template_clusters, basic_attr_list, identify_attr_list, on_off_attr_list, rel_humidity_attr_list);
 
 ZB_DECLARE_SWIFT_DEVICE_EP(
 	app_template_ep,
@@ -127,6 +135,35 @@ static void app_clusters_attr_init(void)
 
 	/* Identify cluster attributes data. */
 	dev_ctx.identify_attr.identify_time = ZB_ZCL_IDENTIFY_IDENTIFY_TIME_DEFAULT_VALUE;
+
+	/* Relative Humidity cluster attributes data. */
+	dev_ctx.rel_humidity_attr.value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_UNKNOWN;
+	dev_ctx.rel_humidity_attr.min_value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MIN_VALUE_MIN_VALUE;
+	dev_ctx.rel_humidity_attr.max_value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MIN_VALUE_MAX_VALUE;
+
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_TEMPLATE_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
+		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
+		ZB_FALSE);
+
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_TEMPLATE_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MIN_VALUE_ID,
+		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.min_value,
+		ZB_FALSE);
+
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_TEMPLATE_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MAX_VALUE_ID,
+		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.max_value,
+		ZB_FALSE);
 }
 
 /**@brief Function to toggle the identify LED
@@ -344,6 +381,10 @@ int main(void)
 	configure_gpio();
 	register_factory_reset_button(FACTORY_RESET_BUTTON);
 
+	/* Configure trace */
+	ZB_SET_TRACE_LEVEL(4);
+	ZB_SET_TRACE_MASK(0x0800);
+
 	/* Register callback for handling ZCL commands. */
 	ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb);
 
@@ -360,10 +401,50 @@ int main(void)
 
 	LOG_INF("Zigbee application template started");
 
-	while(1) {
-	    adc_run();
+	/* Start reporting */
+	zb_ret_t ret;
 
-	    k_sleep(K_MSEC(1000));
+	ret = zb_zcl_start_attr_reporting(APP_TEMPLATE_ENDPOINT,
+						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+						  ZB_ZCL_CLUSTER_SERVER_ROLE,
+						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID);
+
+	if (ret != RET_OK) {
+	    LOG_INF("Failed to start Attribute reporting: %d", ret);
+	}
+
+// These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
+#define MIN_MV 910
+#define MAX_MV 2160
+
+	while(1) {
+	    int32_t val_mv;
+	    uint8_t humidity;
+
+	    val_mv = adc_run();
+
+	    if (val_mv < MIN_MV) {
+		humidity = 100; // Max humidity
+	    } else
+	    if (val_mv > MAX_MV) {
+		humidity = 0; // Min humidity
+	    } else {
+		// MIN_MV => 100% (water)
+		// MAX_MV => 0% (air)
+		humidity = 100-((val_mv - MIN_MV)*100/(MAX_MV-MIN_MV));
+	    }
+
+	    dev_ctx.rel_humidity_attr.value = 100*humidity;
+
+	    ZB_ZCL_SET_ATTRIBUTE(
+		    APP_TEMPLATE_ENDPOINT,
+		    ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+		    ZB_ZCL_CLUSTER_SERVER_ROLE,
+		    ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
+		    (zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
+		    ZB_FALSE);
+
+	    k_sleep(K_MSEC(2000));
 	}
 
 	return 0;
