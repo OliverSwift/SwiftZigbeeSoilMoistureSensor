@@ -370,6 +370,46 @@ void zboss_signal_handler(zb_bufid_t bufid)
 int adc_setup(void); // In adc.c
 int32_t adc_run(void); // In adc.c
 
+void do_humidity_measurement(zb_uint8_t param) {
+    // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
+#define MIN_MV 910
+#define MAX_MV 2160
+
+	int32_t val_mv;
+	uint8_t humidity;
+	static uint8_t humidity_last = 0xff;
+
+	val_mv = adc_run();
+
+	if (val_mv < MIN_MV) {
+	    humidity = 100; // Max humidity
+	} else if (val_mv > MAX_MV) {
+	    humidity = 0; // Min humidity
+	} else {
+	    // MIN_MV => 100% (water)
+	    // MAX_MV => 0% (air)
+	    humidity = 100-((val_mv - MIN_MV)*100/(MAX_MV-MIN_MV));
+	}
+
+	if (humidity != humidity_last) {
+	    dev_ctx.rel_humidity_attr.value = 100*humidity;
+
+	    ZB_ZCL_SET_ATTRIBUTE(
+		    APP_TEMPLATE_ENDPOINT,
+		    ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+		    ZB_ZCL_CLUSTER_SERVER_ROLE,
+		    ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
+		    (zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
+		    ZB_FALSE);
+
+	    humidity_last = humidity_last;
+
+	    LOG_INF("Updating humidity value: %d%%", humidity);
+	}
+
+	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(10000));
+}
+
 int main(void)
 {
 	LOG_INF("Starting ADC reading on AIN0");
@@ -399,53 +439,17 @@ int main(void)
 	/* Start Zigbee default thread */
 	zigbee_enable();
 
-	LOG_INF("Zigbee application template started");
-
 	/* Start reporting */
-	zb_ret_t ret;
-
-	ret = zb_zcl_start_attr_reporting(APP_TEMPLATE_ENDPOINT,
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_TEMPLATE_ENDPOINT,
 						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 						  ZB_ZCL_CLUSTER_SERVER_ROLE,
-						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID);
-
-	if (ret != RET_OK) {
-	    LOG_INF("Failed to start Attribute reporting: %d", ret);
+						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
+	    LOG_INF("Failed to start Attribute reporting");
 	}
 
-// These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
-#define MIN_MV 910
-#define MAX_MV 2160
+	LOG_INF("Zigbee application template started");
 
-	while(1) {
-	    int32_t val_mv;
-	    uint8_t humidity;
-
-	    val_mv = adc_run();
-
-	    if (val_mv < MIN_MV) {
-		humidity = 100; // Max humidity
-	    } else
-	    if (val_mv > MAX_MV) {
-		humidity = 0; // Min humidity
-	    } else {
-		// MIN_MV => 100% (water)
-		// MAX_MV => 0% (air)
-		humidity = 100-((val_mv - MIN_MV)*100/(MAX_MV-MIN_MV));
-	    }
-
-	    dev_ctx.rel_humidity_attr.value = 100*humidity;
-
-	    ZB_ZCL_SET_ATTRIBUTE(
-		    APP_TEMPLATE_ENDPOINT,
-		    ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
-		    ZB_ZCL_CLUSTER_SERVER_ROLE,
-		    ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
-		    (zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
-		    ZB_FALSE);
-
-	    k_sleep(K_MSEC(2000));
-	}
+	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(10000));
 
 	return 0;
 }
