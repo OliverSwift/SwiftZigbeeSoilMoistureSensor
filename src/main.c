@@ -165,7 +165,16 @@ static void app_clusters_attr_init(void)
 		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.max_value,
 		ZB_FALSE);
 
-	reporting_infoapp_template_ep[1].u.send_info.def_min_interval = 60; // 1 minute
+	// Modify min reporting interval period
+	zb_zcl_reporting_info_t *rep_info;
+
+	rep_info = zb_zcl_find_reporting_info(APP_TEMPLATE_ENDPOINT, ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT, ZB_ZCL_CLUSTER_SERVER_ROLE, ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID);
+
+	if (rep_info) {
+	    rep_info->u.send_info.def_min_interval = 60; // 1 minute
+	} else {
+	    LOG_ERR("Can't find HUMIDITY attribute");
+	}
 }
 
 /**@brief Function to toggle the identify LED
