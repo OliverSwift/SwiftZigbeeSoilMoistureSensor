@@ -164,6 +164,8 @@ static void app_clusters_attr_init(void)
 		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MAX_VALUE_ID,
 		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.max_value,
 		ZB_FALSE);
+
+	reporting_infoapp_template_ep[1].u.send_info.def_min_interval = 60; // 1 minute
 }
 
 /**@brief Function to toggle the identify LED
@@ -402,7 +404,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 		    (zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
 		    ZB_FALSE);
 
-	    humidity_last = humidity_last;
+	    humidity_last = humidity;
 
 	    LOG_INF("Updating humidity value: %d%%", humidity);
 	}
