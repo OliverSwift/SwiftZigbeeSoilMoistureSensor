@@ -5,7 +5,7 @@ all: build/zephyr/zephyr.bin
 
 clean:
 	west build -t clean
-	rm $(PKG)
+	rm -f $(PKG)
 
 
 build/zephyr/zephyr.bin: $(SRC)
