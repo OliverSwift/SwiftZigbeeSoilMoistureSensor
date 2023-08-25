@@ -389,8 +389,8 @@ void do_humidity_measurement(zb_uint8_t param) {
 #define MAX_MV 2160
 
 	int32_t val_mv;
-	uint8_t humidity;
-	static uint8_t humidity_last = 0xff;
+	uint16_t humidity;
+	static uint16_t humidity_last = 0xffff;
 
 	val_mv = adc_run();
 
@@ -405,7 +405,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	}
 
 	// Low filter
-	if (humidity_last != 0xff) {
+	if (humidity_last != 0xffff) {
 	    humidity = (humidity_last + humidity)/2;
 	}
 
