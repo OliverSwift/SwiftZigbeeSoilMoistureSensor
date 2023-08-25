@@ -381,6 +381,8 @@ void zboss_signal_handler(zb_bufid_t bufid)
 int adc_setup(void); // In adc.c
 int32_t adc_run(void); // In adc.c
 
+#define PROBE_INTERVAL_MS 60000
+
 void do_humidity_measurement(zb_uint8_t param) {
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
@@ -402,6 +404,11 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    humidity = 100-((val_mv - MIN_MV)*100/(MAX_MV-MIN_MV));
 	}
 
+	// Low filter
+	if (humidity_last != 0xff) {
+	    humidity = (humidity_last + humidity)/2;
+	}
+
 	if (humidity != humidity_last) {
 	    dev_ctx.rel_humidity_attr.value = 100*humidity;
 
@@ -418,7 +425,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    LOG_INF("Updating humidity value: %d%%", humidity);
 	}
 
-	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(10000));
+	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 }
 
 int main(void)
@@ -460,7 +467,7 @@ int main(void)
 
 	LOG_INF("Zigbee application template started");
 
-	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(10000));
+	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 
 	return 0;
 }
