@@ -11,6 +11,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/gpio.h>
 #include <dk_buttons_and_leds.h>
 
 #include <zboss_api.h>
@@ -20,6 +21,7 @@
 #include <zb_nrf_platform.h>
 #include "zb_swift_device.h"
 
+static const struct gpio_dt_spec probe_vdd = GPIO_DT_SPEC_GET(DT_NODELABEL(probe_vdd), gpios);
 
 /* Device endpoint, used to receive ZCL commands. */
 #define APP_TEMPLATE_ENDPOINT               10
@@ -285,6 +287,13 @@ static void configure_gpio(void)
 	if (err) {
 		LOG_ERR("Cannot init LEDs (err: %d)", err);
 	}
+
+	if (!gpio_is_ready_dt(&probe_vdd)) {
+	    LOG_ERR("Can't get GPIO1.15 ready");
+	} else
+	if (gpio_pin_configure_dt(&probe_vdd, GPIO_OUTPUT_INACTIVE) < 0) {
+	    LOG_ERR("Can't configure GPIO1.15");
+	}
 }
 
 /**@brief Function for turning ON/OFF the light bulb.
@@ -392,7 +401,15 @@ void do_humidity_measurement(zb_uint8_t param) {
 	uint16_t humidity;
 	static uint16_t humidity_last = 0xffff;
 
+	// Power on the probe
+	gpio_pin_set_dt(&probe_vdd,1);
+	k_msleep(100); // Wait for output to stabilize
+
+	// Measurement
 	val_mv = adc_run();
+
+	// Power off the probe
+	gpio_pin_set_dt(&probe_vdd,0);
 
 	if (val_mv < MIN_MV) {
 	    humidity = 100; // Max humidity
