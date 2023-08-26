@@ -390,7 +390,7 @@ void zboss_signal_handler(zb_bufid_t bufid)
 int adc_setup(void); // In adc.c
 int32_t adc_run(void); // In adc.c
 
-#define PROBE_INTERVAL_MS 10000
+#define PROBE_INTERVAL_MS 60000
 
 void do_humidity_measurement(zb_uint8_t param) {
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
@@ -398,18 +398,26 @@ void do_humidity_measurement(zb_uint8_t param) {
 #define MAX_MV 2160
 
 	int32_t val_mv;
-	uint16_t humidity;
+	uint16_t humidity; // 100 x H%
 	static uint16_t humidity_last = 0xffff;
 
 	// Power on the probe
-	//gpio_pin_set_dt(&probe_vdd,1);
-	//k_msleep(1000); // Wait for output to stabilize
+	gpio_pin_set_dt(&probe_vdd,1);
+	k_msleep(1000); // Wait for output to stabilize
 
 	// Measurement
 	val_mv = adc_run();
 
+	// Check minimum valid measurement
+
+	if (val_mv < 10) {
+	    LOG_WRN("Probe certainly unplugged. Retesting in 2 seconds.");
+	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000)); // Come back to check in 2 secs
+	    return;
+	}
+
 	// Power off the probe
-	//gpio_pin_set_dt(&probe_vdd,0);
+	gpio_pin_set_dt(&probe_vdd,0);
 
 	if (val_mv < MIN_MV) {
 	    humidity = 100; // Max humidity
@@ -421,13 +429,15 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    humidity = 100-((val_mv - MIN_MV)*100/(MAX_MV-MIN_MV));
 	}
 
+	humidity *= 100;
+
 	// Low filter
 	if (humidity_last != 0xffff) {
 	    humidity = (humidity_last + humidity)/2;
 	}
 
-	if (humidity != humidity_last) {
-	    dev_ctx.rel_humidity_attr.value = 100*humidity;
+	if (humidity/100 != humidity_last/100) {
+	    dev_ctx.rel_humidity_attr.value = humidity;
 
 	    ZB_ZCL_SET_ATTRIBUTE(
 		    APP_TEMPLATE_ENDPOINT,
@@ -439,7 +449,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	    humidity_last = humidity;
 
-	    LOG_INF("Updating humidity value: %d%%", humidity);
+	    LOG_INF("Updating humidity value: %d%%", humidity/100);
 	}
 
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
