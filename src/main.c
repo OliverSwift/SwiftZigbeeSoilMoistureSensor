@@ -233,6 +233,7 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	/* Update network status LED. */
 	zigbee_led_status_update(bufid, ZIGBEE_NETWORK_STATE_LED);
 
+	/* Change long poll interval once device has joined */
 	if (setup_poll_interval && ZB_JOINED()) {
 	    zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS/2);
 	    setup_poll_interval = 0;
