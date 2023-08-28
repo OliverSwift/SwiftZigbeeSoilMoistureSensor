@@ -24,7 +24,7 @@
 /** @cond internals_doc */
 
 /** Swift Device IN (server) clusters number */
-#define ZB_SWIFT_DEVICE_IN_CLUSTER_NUM 4
+#define ZB_SWIFT_DEVICE_IN_CLUSTER_NUM 2
 
 /** Swift Device OUT (client) clusters number */
 #define ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM 0
@@ -33,7 +33,7 @@
 	(ZB_SWIFT_DEVICE_IN_CLUSTER_NUM + ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM)
 
 /** Number of attribute for reporting on Swift Device */
-#define ZB_SWIFT_DEVICE_REPORT_ATTR_COUNT (ZB_ZCL_ON_OFF_REPORT_ATTR_COUNT + ZB_ZCL_REL_HUMIDITY_MEASUREMENT_REPORT_ATTR_COUNT)
+#define ZB_SWIFT_DEVICE_REPORT_ATTR_COUNT (ZB_ZCL_REL_HUMIDITY_MEASUREMENT_REPORT_ATTR_COUNT)
 
 /** Missing attributes structure declaration **/
 typedef struct {
@@ -53,29 +53,13 @@ typedef struct {
 #define ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(			      \
 		cluster_list_name,				      \
 		basic_attr_list,				      \
-		identify_attr_list,				      \
-		on_off_attr_list,				      \
 		rh_humidity_attr_list)				      \
 zb_zcl_cluster_desc_t cluster_list_name[] =			      \
 {								      \
 	ZB_ZCL_CLUSTER_DESC(					      \
-		ZB_ZCL_CLUSTER_ID_IDENTIFY,			      \
-		ZB_ZCL_ARRAY_SIZE(identify_attr_list, zb_zcl_attr_t), \
-		(identify_attr_list),				      \
-		ZB_ZCL_CLUSTER_SERVER_ROLE,			      \
-		ZB_ZCL_MANUF_CODE_INVALID			      \
-	),							      \
-	ZB_ZCL_CLUSTER_DESC(					      \
 		ZB_ZCL_CLUSTER_ID_BASIC,			      \
 		ZB_ZCL_ARRAY_SIZE(basic_attr_list, zb_zcl_attr_t),    \
 		(basic_attr_list),				      \
-		ZB_ZCL_CLUSTER_SERVER_ROLE,			      \
-		ZB_ZCL_MANUF_CODE_INVALID			      \
-	),							      \
-	ZB_ZCL_CLUSTER_DESC(					      \
-		ZB_ZCL_CLUSTER_ID_ON_OFF,			      \
-		ZB_ZCL_ARRAY_SIZE(on_off_attr_list, zb_zcl_attr_t),   \
-		(on_off_attr_list),				      \
 		ZB_ZCL_CLUSTER_SERVER_ROLE,			      \
 		ZB_ZCL_MANUF_CODE_INVALID			      \
 	),							      \
@@ -110,8 +94,6 @@ zb_zcl_cluster_desc_t cluster_list_name[] =			      \
 		out_clust_num,								       \
 		{									       \
 			ZB_ZCL_CLUSTER_ID_BASIC,					       \
-			ZB_ZCL_CLUSTER_ID_IDENTIFY,					       \
-			ZB_ZCL_CLUSTER_ID_ON_OFF,					       \
 			ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT			       \
 		}									       \
 	}
