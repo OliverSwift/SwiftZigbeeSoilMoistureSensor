@@ -202,8 +202,6 @@ static void configure_gpio(void)
  */
 static void zcl_device_cb(zb_bufid_t bufid)
 {
-	zb_uint8_t cluster_id;
-	zb_uint8_t attr_id;
 	zb_zcl_device_callback_param_t  *device_cb_param =
 		ZB_BUF_GET_PARAM(bufid, zb_zcl_device_callback_param_t);
 
@@ -296,11 +294,11 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Low filter
 	if (humidity_last != 0xffff) {
-	    humidity = (humidity_last + humidity)/2;
+	    humidity = (humidity_last*3 + humidity)/4;
 	}
 
 	if (humidity/100 != humidity_last/100) {
-	    dev_ctx.rel_humidity_attr.value = humidity;
+	    dev_ctx.rel_humidity_attr.value = (humidity/10)*10; // Rounding at 10th
 
 	    ZB_ZCL_SET_ATTRIBUTE(
 		    APP_TEMPLATE_ENDPOINT,
