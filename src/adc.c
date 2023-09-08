@@ -12,8 +12,9 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/adc.h>
 #include <zephyr/kernel.h>
-#include <zephyr/sys/printk.h>
-#include <zephyr/sys/util.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(adc, LOG_LEVEL_INF);
 
 #if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
 	!DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
@@ -35,13 +36,13 @@ int adc_setup(void)
 
 	/* Configure channel 0 prior to sampling. */
 	if (!device_is_ready(adc_channels[0].dev)) {
-		printk("ADC controller device %s not ready\n", adc_channels[0].dev->name);
+		LOG_ERR("ADC controller device %s not ready\n", adc_channels[0].dev->name);
 		return 0;
 	}
 
 	err = adc_channel_setup_dt(&adc_channels[0]);
 	if (err < 0) {
-		printk("Could not setup channel 0 (%d)\n", err);
+		LOG_ERR("Could not setup channel 0 (%d)\n", err);
 		return 0;
 	}
 
@@ -59,13 +60,13 @@ int32_t adc_run()
 	};
 	int32_t val_mv;
 
-	printk("- %s, channel %d: ", adc_channels[0].dev->name, adc_channels[0].channel_id);
+	LOG_INF("- %s, channel %d: ", adc_channels[0].dev->name, adc_channels[0].channel_id);
 
 	(void)adc_sequence_init_dt(&adc_channels[0], &sequence);
 
 	err = adc_read(adc_channels[0].dev, &sequence);
 	if (err < 0) {
-		printk("Could not read (%d)\n", err);
+		LOG_ERR("Could not read (%d)\n", err);
 		return -1;
 	}
 
@@ -74,9 +75,9 @@ int32_t adc_run()
 	err = adc_raw_to_millivolts_dt(&adc_channels[0], &val_mv);
 
 	if (err < 0) {
-		printk(" (N/A)\n");
+		LOG_INF(" (N/A)\n");
 	} else {
-		printk(" = %"PRId32" mV\n", val_mv);
+		LOG_INF(" = %"PRId32" mV\n", val_mv);
 	}
 
 	return val_mv;
