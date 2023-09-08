@@ -257,8 +257,12 @@ void do_humidity_measurement(zb_uint8_t param) {
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
 #define MAX_MV 2160
+#define NB_SAMPLES 4
 
 	int32_t val_mv;
+	static int32_t val_mv_samples[NB_SAMPLES];
+	static int val_mv_cur = 0;
+	static int32_t val_mv_sum = -1;
 	uint16_t humidity; // 100 x H%
 	static uint16_t humidity_last = 0xffff;
 
@@ -269,6 +273,9 @@ void do_humidity_measurement(zb_uint8_t param) {
 	// Measurement
 	val_mv = adc_run();
 
+	// Power off the probe
+	gpio_pin_set_dt(&probe_vdd,0);
+
 	// Check minimum valid measurement
 
 	if (val_mv < 10) {
@@ -277,8 +284,20 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    return;
 	}
 
-	// Power off the probe
-	gpio_pin_set_dt(&probe_vdd,0);
+	// Low filtering
+	if (val_mv_sum == -1) {
+	    for(int i=0; i < NB_SAMPLES; i++) {
+		val_mv_samples[i] = val_mv;
+	    }
+	    val_mv_sum = NB_SAMPLES*val_mv;
+	} else {
+	    val_mv_sum -= val_mv_samples[val_mv_cur];
+	    val_mv_samples[val_mv_cur] = val_mv;
+	    val_mv_sum += val_mv;
+	    val_mv_cur = (val_mv_cur + 1) % NB_SAMPLES;
+	}
+
+	val_mv = val_mv_sum / NB_SAMPLES;
 
 	if (val_mv < MIN_MV) {
 	    humidity = 100; // Max humidity
