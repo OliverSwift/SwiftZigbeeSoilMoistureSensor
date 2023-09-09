@@ -60,8 +60,6 @@ int32_t adc_run()
 	};
 	int32_t val_mv;
 
-	LOG_INF("- %s, channel %d: ", adc_channels[0].dev->name, adc_channels[0].channel_id);
-
 	(void)adc_sequence_init_dt(&adc_channels[0], &sequence);
 
 	err = adc_read(adc_channels[0].dev, &sequence);
@@ -74,11 +72,7 @@ int32_t adc_run()
 
 	err = adc_raw_to_millivolts_dt(&adc_channels[0], &val_mv);
 
-	if (err < 0) {
-		LOG_INF(" (N/A)\n");
-	} else {
-		LOG_INF(" = %"PRId32" mV\n", val_mv);
-	}
+	LOG_INF("- %s, channel %d: %"PRId32" mV", adc_channels[0].dev->name, adc_channels[0].channel_id, val_mv);
 
 	return val_mv;
 }
