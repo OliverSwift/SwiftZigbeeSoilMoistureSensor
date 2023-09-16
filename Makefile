@@ -16,3 +16,6 @@ $(PKG): build/zephyr/zephyr.bin
 
 flash: $(PKG)
 	nrfutil dfu usb-serial -pkg $(PKG) -p /dev/ttyACM0
+
+sed:
+	west build -b nrf52840dongle_nrf52840 -p -- -DCONF_FILE=prj_power_saving.conf
