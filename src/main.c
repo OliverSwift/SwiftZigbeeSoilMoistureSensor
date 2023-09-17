@@ -228,9 +228,6 @@ void zboss_signal_handler(zb_bufid_t bufid)
 {
 	uint8_t setup_poll_interval = 1;
 
-	/* Update network status LED. */
-	zigbee_led_status_update(bufid, ZIGBEE_NETWORK_STATE_LED);
-
 	/* Change long poll interval once device has joined */
 	if (setup_poll_interval && ZB_JOINED()) {
 	    zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS/2);
@@ -248,6 +245,21 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	if (bufid) {
 		zb_buf_free(bufid);
 	}
+}
+
+void check_join_status(zb_uint8_t param) {
+    static uint8_t led_state = 1;
+
+    if (ZB_JOINED()) {
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	return;
+    }
+
+    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
+
+    led_state ^= 1;
+
+    ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
 }
 
 int adc_setup(void); // In adc.c
@@ -346,6 +358,9 @@ int main(void)
 	configure_gpio();
 	register_factory_reset_button(FACTORY_RESET_BUTTON);
 
+	/* Set Led on at startup */
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
+
 	/* Register callback for handling ZCL commands. */
 	ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb);
 
@@ -371,6 +386,8 @@ int main(void)
 	LOG_INF("Zigbee application template started");
 
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000));
+
+	ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 
 	return 0;
 }
