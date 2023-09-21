@@ -34,17 +34,11 @@ static const struct gpio_dt_spec probe_vdd = GPIO_DT_SPEC_GET(DT_NODELABEL(probe
 /* LED indicating that device successfully joined Zigbee network. */
 #define ZIGBEE_NETWORK_STATE_LED            DK_LED1
 
-/* LED used for device identification. */
-#define IDENTIFY_LED                        DK_LED2
-
-/* LED used for device on_off. */
-#define ON_OFF_LED			    DK_LED3
-
-/* Button used to enter the Identify mode. */
-#define IDENTIFY_MODE_BUTTON                DK_BTN1_MSK
-
 /* Button to start Factory Reset */
-#define FACTORY_RESET_BUTTON                IDENTIFY_MODE_BUTTON
+#define FACTORY_RESET_BUTTON                DK_BTN1_MSK
+
+/* Probe measurement interval */
+#define PROBE_INTERVAL_MS 60000
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -53,17 +47,11 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
  */
 struct zb_device_ctx {
 	zb_zcl_basic_attrs_ext_t basic_attr;
-	zb_zcl_on_off_attrs_t on_off_attr;
-	zb_zcl_identify_attrs_t identify_attr;
 	zb_zcl_rel_humidity_attrs_t rel_humidity_attr;
 };
 
 /* Zigbee device application context storage. */
 static struct zb_device_ctx dev_ctx;
-
-ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(
-	identify_attr_list,
-	&dev_ctx.identify_attr.identify_time);
 
 ZB_ZCL_DECLARE_BASIC_ATTRIB_LIST_EXT(
 	basic_attr_list,
@@ -79,10 +67,6 @@ ZB_ZCL_DECLARE_BASIC_ATTRIB_LIST_EXT(
 	&dev_ctx.basic_attr.ph_env,
 	dev_ctx.basic_attr.sw_ver);
 
-ZB_ZCL_DECLARE_ON_OFF_ATTRIB_LIST(
-	on_off_attr_list,
-	&dev_ctx.on_off_attr.on_off);
-
 ZB_ZCL_DECLARE_REL_HUMIDITY_MEASUREMENT_ATTRIB_LIST(
 	rel_humidity_attr_list,
 	&dev_ctx.rel_humidity_attr.value,
@@ -90,7 +74,7 @@ ZB_ZCL_DECLARE_REL_HUMIDITY_MEASUREMENT_ATTRIB_LIST(
 	&dev_ctx.rel_humidity_attr.max_value
 );
 
-ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_template_clusters, basic_attr_list, identify_attr_list, on_off_attr_list, rel_humidity_attr_list);
+ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_template_clusters, basic_attr_list, rel_humidity_attr_list);
 
 ZB_DECLARE_SWIFT_DEVICE_EP(
 	app_template_ep,
@@ -102,10 +86,10 @@ ZBOSS_DECLARE_DEVICE_CTX_1_EP(
 	app_template_ep);
 
 /* Manufacturer name (32 bytes). */
-#define TEMPLATE_INIT_BASIC_MANUF_NAME      "Nordic"
+#define TEMPLATE_INIT_BASIC_MANUF_NAME      "Swift"
 
 /* Model number assigned by manufacturer (32-bytes long string). */
-#define TEMPLATE_INIT_BASIC_MODEL_ID        "Swift switch"
+#define TEMPLATE_INIT_BASIC_MODEL_ID        "Soil Moisture Sensor"
 
 /**@brief Function for initializing all clusters attributes. */
 static void app_clusters_attr_init(void)
@@ -123,20 +107,6 @@ static void app_clusters_attr_init(void)
 		dev_ctx.basic_attr.model_id,
 		TEMPLATE_INIT_BASIC_MODEL_ID,
 		ZB_ZCL_STRING_CONST_SIZE(TEMPLATE_INIT_BASIC_MODEL_ID));
-
-	/* On/Off cluster attributes data. */
-	dev_ctx.on_off_attr.on_off = (zb_bool_t)ZB_ZCL_ON_OFF_IS_OFF;
-
-	ZB_ZCL_SET_ATTRIBUTE(
-		APP_TEMPLATE_ENDPOINT,
-		ZB_ZCL_CLUSTER_ID_ON_OFF,
-		ZB_ZCL_CLUSTER_SERVER_ROLE,
-		ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID,
-		(zb_uint8_t *)&dev_ctx.on_off_attr.on_off,
-		ZB_FALSE);
-
-	/* Identify cluster attributes data. */
-	dev_ctx.identify_attr.identify_time = ZB_ZCL_IDENTIFY_IDENTIFY_TIME_DEFAULT_VALUE;
 
 	/* Relative Humidity cluster attributes data. */
 	dev_ctx.rel_humidity_attr.value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_UNKNOWN;
@@ -179,72 +149,6 @@ static void app_clusters_attr_init(void)
 	}
 }
 
-/**@brief Function to toggle the identify LED
- *
- * @param  bufid  Unused parameter, required by ZBOSS scheduler API.
- */
-static void toggle_identify_led(zb_bufid_t bufid)
-{
-	static int blink_status;
-
-	dk_set_led(IDENTIFY_LED, (++blink_status) % 2);
-	ZB_SCHEDULE_APP_ALARM(toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(100));
-}
-
-/**@brief Function to handle identify notification events on the first endpoint.
- *
- * @param  bufid  Unused parameter, required by ZBOSS scheduler API.
- */
-static void identify_cb(zb_bufid_t bufid)
-{
-	zb_ret_t zb_err_code;
-
-	if (bufid) {
-		/* Schedule a self-scheduling function that will toggle the LED */
-		ZB_SCHEDULE_APP_CALLBACK(toggle_identify_led, bufid);
-	} else {
-		/* Cancel the toggling function alarm and turn off LED */
-		zb_err_code = ZB_SCHEDULE_APP_ALARM_CANCEL(toggle_identify_led, ZB_ALARM_ANY_PARAM);
-		ZVUNUSED(zb_err_code);
-
-		dk_set_led(IDENTIFY_LED, 0);
-	}
-}
-
-/**@brief Starts identifying the device.
- *
- * @param  bufid  Unused parameter, required by ZBOSS scheduler API.
- */
-static void start_identifying(zb_bufid_t bufid)
-{
-	ZVUNUSED(bufid);
-
-	if (ZB_JOINED()) {
-		/* Check if endpoint is in identifying mode,
-		 * if not put desired endpoint in identifying mode.
-		 */
-		if (dev_ctx.identify_attr.identify_time ==
-		ZB_ZCL_IDENTIFY_IDENTIFY_TIME_DEFAULT_VALUE) {
-
-			zb_ret_t zb_err_code = zb_bdb_finding_binding_target(
-				APP_TEMPLATE_ENDPOINT);
-
-			if (zb_err_code == RET_OK) {
-				LOG_INF("Enter identify mode");
-			} else if (zb_err_code == RET_INVALID_STATE) {
-				LOG_WRN("RET_INVALID_STATE - Cannot enter identify mode");
-			} else {
-				ZB_ERROR_CHECK(zb_err_code);
-			}
-		} else {
-			LOG_INF("Cancel identify mode");
-			zb_bdb_finding_binding_target_cancel();
-		}
-	} else {
-		LOG_WRN("Device not in a network - cannot enter identify mode");
-	}
-}
-
 /**@brief Callback for button events.
  *
  * @param[in]   button_state  Bitmask containing buttons state.
@@ -253,19 +157,14 @@ static void start_identifying(zb_bufid_t bufid)
  */
 static void button_changed(uint32_t button_state, uint32_t has_changed)
 {
-	if (IDENTIFY_MODE_BUTTON & has_changed) {
-		if (IDENTIFY_MODE_BUTTON & button_state) {
+	if (FACTORY_RESET_BUTTON & has_changed) {
+		if (FACTORY_RESET_BUTTON & button_state) {
 			/* Button changed its state to pressed */
 		} else {
 			/* Button changed its state to released */
 			if (was_factory_reset_done()) {
 				/* The long press was for Factory Reset */
 				LOG_DBG("After Factory Reset - ignore button release");
-			} else   {
-				/* Button released before Factory Reset */
-
-				/* Start identification mode */
-				ZB_SCHEDULE_APP_CALLBACK(start_identifying, 0);
 			}
 		}
 	}
@@ -296,25 +195,6 @@ static void configure_gpio(void)
 	}
 }
 
-/**@brief Function for turning ON/OFF the light bulb.
- *
- * @param[in]   on   Boolean light bulb state.
- */
-static void on_off_set_value(zb_bool_t on)
-{
-	LOG_INF("Set ON/OFF value: %i", on);
-
-	ZB_ZCL_SET_ATTRIBUTE(
-		APP_TEMPLATE_ENDPOINT,
-		ZB_ZCL_CLUSTER_ID_ON_OFF,
-		ZB_ZCL_CLUSTER_SERVER_ROLE,
-		ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID,
-		(zb_uint8_t *)&on,
-		ZB_FALSE);
-
-	dk_set_led(ON_OFF_LED, on);
-}
-
 /**@brief Callback function for handling ZCL commands.
  *
  * @param[in]   bufid   Reference to Zigbee stack buffer
@@ -322,8 +202,6 @@ static void on_off_set_value(zb_bool_t on)
  */
 static void zcl_device_cb(zb_bufid_t bufid)
 {
-	zb_uint8_t cluster_id;
-	zb_uint8_t attr_id;
 	zb_zcl_device_callback_param_t  *device_cb_param =
 		ZB_BUF_GET_PARAM(bufid, zb_zcl_device_callback_param_t);
 
@@ -333,29 +211,6 @@ static void zcl_device_cb(zb_bufid_t bufid)
 	device_cb_param->status = RET_OK;
 
 	switch (device_cb_param->device_cb_id) {
-	case ZB_ZCL_SET_ATTR_VALUE_CB_ID:
-		cluster_id = device_cb_param->cb_param.
-			     set_attr_value_param.cluster_id;
-		attr_id = device_cb_param->cb_param.
-			  set_attr_value_param.attr_id;
-
-		if (cluster_id == ZB_ZCL_CLUSTER_ID_ON_OFF) {
-			uint8_t value =
-				device_cb_param->cb_param.set_attr_value_param
-				.values.data8;
-
-			LOG_INF("on/off attribute setting to %hd", value);
-			if (attr_id == ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID) {
-				on_off_set_value((zb_bool_t)value);
-			}
-		} else {
-			/* Other clusters can be processed here */
-			LOG_INF("Unhandled cluster attribute id: %d",
-				cluster_id);
-			device_cb_param->status = RET_NOT_IMPLEMENTED;
-		}
-		break;
-
 	default:
 		device_cb_param->status = RET_NOT_IMPLEMENTED;
 		break;
@@ -371,8 +226,13 @@ static void zcl_device_cb(zb_bufid_t bufid)
  */
 void zboss_signal_handler(zb_bufid_t bufid)
 {
-	/* Update network status LED. */
-	zigbee_led_status_update(bufid, ZIGBEE_NETWORK_STATE_LED);
+	uint8_t setup_poll_interval = 1;
+
+	/* Change long poll interval once device has joined */
+	if (setup_poll_interval && ZB_JOINED()) {
+	    zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS/2);
+	    setup_poll_interval = 0;
+	}
 
 	/* No application-specific behavior is required.
 	 * Call default signal handler.
@@ -387,17 +247,34 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	}
 }
 
+void check_join_status(zb_uint8_t param) {
+    static uint8_t led_state = 1;
+
+    if (ZB_JOINED()) {
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	return;
+    }
+
+    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
+
+    led_state ^= 1;
+
+    ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
+}
+
 int adc_setup(void); // In adc.c
 int32_t adc_run(void); // In adc.c
-
-#define PROBE_INTERVAL_MS 60000
 
 void do_humidity_measurement(zb_uint8_t param) {
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
 #define MAX_MV 2160
+#define NB_SAMPLES 4
 
 	int32_t val_mv;
+	static int32_t val_mv_samples[NB_SAMPLES];
+	static int val_mv_cur = 0;
+	static int32_t val_mv_sum = -1;
 	uint16_t humidity; // 100 x H%
 	static uint16_t humidity_last = 0xffff;
 
@@ -408,6 +285,9 @@ void do_humidity_measurement(zb_uint8_t param) {
 	// Measurement
 	val_mv = adc_run();
 
+	// Power off the probe
+	gpio_pin_set_dt(&probe_vdd,0);
+
 	// Check minimum valid measurement
 
 	if (val_mv < 10) {
@@ -416,8 +296,20 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    return;
 	}
 
-	// Power off the probe
-	gpio_pin_set_dt(&probe_vdd,0);
+	// Low filtering
+	if (val_mv_sum == -1) {
+	    for(int i=0; i < NB_SAMPLES; i++) {
+		val_mv_samples[i] = val_mv;
+	    }
+	    val_mv_sum = NB_SAMPLES*val_mv;
+	} else {
+	    val_mv_sum -= val_mv_samples[val_mv_cur];
+	    val_mv_samples[val_mv_cur] = val_mv;
+	    val_mv_sum += val_mv;
+	    val_mv_cur = (val_mv_cur + 1) % NB_SAMPLES;
+	}
+
+	val_mv = val_mv_sum / NB_SAMPLES;
 
 	if (val_mv < MIN_MV) {
 	    humidity = 100; // Max humidity
@@ -433,11 +325,11 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Low filter
 	if (humidity_last != 0xffff) {
-	    humidity = (humidity_last + humidity)/2;
+	    humidity = (humidity_last*3 + humidity)/4;
 	}
 
 	if (humidity/100 != humidity_last/100) {
-	    dev_ctx.rel_humidity_attr.value = humidity;
+	    dev_ctx.rel_humidity_attr.value = (humidity/10)*10; // Rounding at 10th
 
 	    ZB_ZCL_SET_ATTRIBUTE(
 		    APP_TEMPLATE_ENDPOINT,
@@ -466,9 +358,8 @@ int main(void)
 	configure_gpio();
 	register_factory_reset_button(FACTORY_RESET_BUTTON);
 
-	/* Configure trace */
-	ZB_SET_TRACE_LEVEL(4);
-	ZB_SET_TRACE_MASK(0x0800);
+	/* Set Led on at startup */
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 
 	/* Register callback for handling ZCL commands. */
 	ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb);
@@ -478,8 +369,8 @@ int main(void)
 
 	app_clusters_attr_init();
 
-	/* Register handlers to identify notifications */
-	ZB_AF_SET_IDENTIFY_NOTIFICATION_HANDLER(APP_TEMPLATE_ENDPOINT, identify_cb);
+	/* Set Sleepy End Device mode */
+	zb_set_rx_on_when_idle(ZB_FALSE);
 
 	/* Start Zigbee default thread */
 	zigbee_enable();
@@ -495,6 +386,8 @@ int main(void)
 	LOG_INF("Zigbee application template started");
 
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000));
+
+	ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 
 	return 0;
 }

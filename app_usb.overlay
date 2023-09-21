@@ -32,7 +32,7 @@
 	gpiocustom {
 		compatible = "gpio-keys";
 		probe_vdd: gpio1_15 {
-		    gpios = <&gpio1 15 GPIO_ACTIVE_HIGH>;
+		    gpios = <&gpio1 15 GPIO_ACTIVE_LOW>;
 		};
 	};
 };
