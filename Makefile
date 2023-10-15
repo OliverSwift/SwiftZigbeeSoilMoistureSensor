@@ -1,20 +1,15 @@
 SRC=src/main.c src/adc.c include/zb_swift_device.h app_usb.overlay pm_static.yml prj.conf
-PKG=swift.zip
+BIN=build/zephyr/zephyr.bin
 
-all: build/zephyr/zephyr.bin
+all: $(BIN)
 
 clean:
 	west build -t clean
-	rm -f $(PKG)
 
-
-build/zephyr/zephyr.bin: $(SRC)
+$(BIN): $(SRC)
 	west build -b nrf52840dk_nrf52840
 
-$(PKG): build/zephyr/zephyr.bin
-	nrfutil pkg generate --hw-version 52 --sd-req=0x00 --application build/zephyr/zephyr.hex --application-version 1 $(PKG)
-
-flash: $(PKG)
+flash: $(BIN)
 	west flash
 
 sed:
