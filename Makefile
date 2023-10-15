@@ -9,13 +9,13 @@ clean:
 
 
 build/zephyr/zephyr.bin: $(SRC)
-	west build -b nrf52840dongle_nrf52840
+	west build -b nrf52840dk_nrf52840
 
 $(PKG): build/zephyr/zephyr.bin
 	nrfutil pkg generate --hw-version 52 --sd-req=0x00 --application build/zephyr/zephyr.hex --application-version 1 $(PKG)
 
 flash: $(PKG)
-	nrfutil dfu usb-serial -pkg $(PKG) -p /dev/ttyACM0
+	west flash
 
 sed:
 	west build -b nrf52840dongle_nrf52840 -p -- -DCONF_FILE=prj_power_saving.conf
