@@ -4,12 +4,6 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-&zephyr_udc0 {
-	cdc_acm_uart: cdc_acm_uart {
-		compatible = "zephyr,cdc-acm-uart";
-	};
-};
-
 &adc {
         #address-cells = <1>;
         #size-cells = <0>;
