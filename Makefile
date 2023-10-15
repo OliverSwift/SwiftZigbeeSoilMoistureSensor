@@ -1,4 +1,4 @@
-SRC=src/main.c src/adc.c include/zb_swift_device.h app_usb.overlay pm_static.yml prj.conf
+SRC=src/main.c src/adc.c include/zb_swift_device.h app.overlay pm_static.yml prj.conf
 BIN=build/zephyr/zephyr.bin
 
 all: $(BIN)
