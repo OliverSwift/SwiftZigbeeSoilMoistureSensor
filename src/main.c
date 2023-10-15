@@ -255,9 +255,9 @@ void check_join_status(zb_uint8_t param) {
 	return;
     }
 
-    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
-
     led_state ^= 1;
+
+    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
 
     ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
 }
