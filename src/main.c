@@ -265,7 +265,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Power on the probe
 	gpio_pin_set_dt(&probe_vdd,1);
-	k_msleep(1000); // Wait for output to stabilize
+	k_msleep(500); // Wait for output to stabilize
 
 	// Measurement
 	val_mv = adc_run();
