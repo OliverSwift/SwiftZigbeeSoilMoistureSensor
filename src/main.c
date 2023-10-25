@@ -251,10 +251,18 @@ int adc_setup(void); // In adc.c
 int32_t adc_run(void); // In adc.c
 
 void do_humidity_measurement(zb_uint8_t param) {
+#ifdef VDD_3V
+    // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.0V
+#define MIN_MV 450
+#define MAX_MV 1825
+#else
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
 #define MAX_MV 2160
+#endif
+
 #define NB_SAMPLES 4
+#define PROBE_POWERUP_TIME_MS 500
 
 	int32_t val_mv;
 	static int32_t val_mv_samples[NB_SAMPLES];
@@ -265,7 +273,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Power on the probe
 	gpio_pin_set_dt(&probe_vdd,1);
-	k_msleep(500); // Wait for output to stabilize
+	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
 	// Measurement
 	val_mv = adc_run();
