@@ -361,12 +361,18 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    LOG_INF("Updating humidity value: %d%%", humidity/100);
 	}
 
+	// TEST
+	uint8_t battery_voltage;
+
+	battery_voltage = adc_battery();
+	LOG_INF("Battery voltage: %d mv", battery_voltage*100);
+
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 }
 
 int main(void)
 {
-	LOG_INF("Starting ADC reading on AIN0");
+	LOG_INF("Starting ADC reading on AIN0 and AIN1");
 	adc_setup();
 
 	LOG_INF("Starting Zigbee application swift example");
