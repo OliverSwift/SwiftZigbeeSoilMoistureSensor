@@ -6,7 +6,7 @@
 
 /** @file
  *
- * @brief Zigbee application template.
+* @brief Zigbee application swift.
  */
 
 #include <zephyr/kernel.h>
@@ -20,16 +20,17 @@
 #include <zigbee/zigbee_app_utils.h>
 #include <zb_nrf_platform.h>
 #include "zb_swift_device.h"
+#include "adc.h"
 
 static const struct gpio_dt_spec probe_vdd = GPIO_DT_SPEC_GET(DT_NODELABEL(probe_vdd), gpios);
 
 /* Device endpoint, used to receive ZCL commands. */
-#define APP_TEMPLATE_ENDPOINT               10
+#define APP_SWIFT_ENDPOINT               10
 
 /* Type of power sources available for the device.
  * For possible values see section 3.2.2.2.8 of ZCL specification.
  */
-#define TEMPLATE_INIT_BASIC_POWER_SOURCE    ZB_ZCL_BASIC_POWER_SOURCE_DC_SOURCE
+#define SWIFT_INIT_BASIC_POWER_SOURCE    ZB_ZCL_BASIC_POWER_SOURCE_BATTERY
 
 /* LED indicating that device successfully joined Zigbee network. */
 #define ZIGBEE_NETWORK_STATE_LED            DK_LED1
@@ -47,6 +48,7 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
  */
 struct zb_device_ctx {
 	zb_zcl_basic_attrs_ext_t basic_attr;
+	zb_zcl_power_config_attrs_t power_config_attr;
 	zb_zcl_rel_humidity_attrs_t rel_humidity_attr;
 };
 
@@ -74,39 +76,57 @@ ZB_ZCL_DECLARE_REL_HUMIDITY_MEASUREMENT_ATTRIB_LIST(
 	&dev_ctx.rel_humidity_attr.max_value
 );
 
-ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_template_clusters, basic_attr_list, rel_humidity_attr_list);
+ZB_ZCL_DECLARE_POWER_CONFIG_ATTRIB_LIST(
+	power_config_attr_list,
+	&dev_ctx.power_config_attr.voltage,
+	&dev_ctx.power_config_attr.size,
+	&dev_ctx.power_config_attr.quantity,
+	&dev_ctx.power_config_attr.rated_voltage,
+	&dev_ctx.power_config_attr.alarm_mask,
+	&dev_ctx.power_config_attr.voltage_min_threshold
+);
+
+ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_swift_clusters, basic_attr_list, power_config_attr_list, rel_humidity_attr_list);
 
 ZB_DECLARE_SWIFT_DEVICE_EP(
-	app_template_ep,
-	APP_TEMPLATE_ENDPOINT,
-	app_template_clusters);
+	app_swift_ep,
+	APP_SWIFT_ENDPOINT,
+	app_swift_clusters);
 
 ZBOSS_DECLARE_DEVICE_CTX_1_EP(
-	app_template_ctx,
-	app_template_ep);
+	app_swift_ctx,
+	app_swift_ep);
 
 /* Manufacturer name (32 bytes). */
-#define TEMPLATE_INIT_BASIC_MANUF_NAME      "Swift"
+#define SWIFT_INIT_BASIC_MANUF_NAME      "Swift"
 
 /* Model number assigned by manufacturer (32-bytes long string). */
-#define TEMPLATE_INIT_BASIC_MODEL_ID        "Soil Moisture Sensor"
+#define SWIFT_INIT_BASIC_MODEL_ID        "Soil Moisture Sensor"
 
 /**@brief Function for initializing all clusters attributes. */
 static void app_clusters_attr_init(void)
 {
 	/* Basic cluster attributes data */
 	dev_ctx.basic_attr.zcl_version = ZB_ZCL_VERSION;
-	dev_ctx.basic_attr.power_source = TEMPLATE_INIT_BASIC_POWER_SOURCE;
+	dev_ctx.basic_attr.power_source = SWIFT_INIT_BASIC_POWER_SOURCE;
 
 	ZB_ZCL_SET_STRING_VAL(
 		dev_ctx.basic_attr.mf_name,
-		TEMPLATE_INIT_BASIC_MANUF_NAME,
-		ZB_ZCL_STRING_CONST_SIZE(TEMPLATE_INIT_BASIC_MANUF_NAME));
+		SWIFT_INIT_BASIC_MANUF_NAME,
+		ZB_ZCL_STRING_CONST_SIZE(SWIFT_INIT_BASIC_MANUF_NAME));
 
 	ZB_ZCL_SET_STRING_VAL(
 		dev_ctx.basic_attr.model_id,
-		TEMPLATE_INIT_BASIC_MODEL_ID,
-		ZB_ZCL_STRING_CONST_SIZE(TEMPLATE_INIT_BASIC_MODEL_ID));
+		SWIFT_INIT_BASIC_MODEL_ID,
+		ZB_ZCL_STRING_CONST_SIZE(SWIFT_INIT_BASIC_MODEL_ID));
+
+	/* Power Config attributes data. */
+	dev_ctx.power_config_attr.voltage = ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID;
+	dev_ctx.power_config_attr.size = ZB_ZCL_POWER_CONFIG_BATTERY_SIZE_CR123A;
+	dev_ctx.power_config_attr.quantity = 1;
+	dev_ctx.power_config_attr.rated_voltage = 30; // 3V battery cell
+	dev_ctx.power_config_attr.alarm_mask = 0;
+	dev_ctx.power_config_attr.voltage_min_threshold = 16; // 1.6V is the minimum for the DCDC-Boost
 
 	/* Relative Humidity cluster attributes data. */
 	dev_ctx.rel_humidity_attr.value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_UNKNOWN;
@@ -114,7 +134,7 @@ static void app_clusters_attr_init(void)
 	dev_ctx.rel_humidity_attr.max_value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MIN_VALUE_MAX_VALUE;
 
 	ZB_ZCL_SET_ATTRIBUTE(
-		APP_TEMPLATE_ENDPOINT,
+		APP_SWIFT_ENDPOINT,
 		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 		ZB_ZCL_CLUSTER_SERVER_ROLE,
 		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
@@ -122,7 +142,7 @@ static void app_clusters_attr_init(void)
 		ZB_FALSE);
 
 	ZB_ZCL_SET_ATTRIBUTE(
-		APP_TEMPLATE_ENDPOINT,
+		APP_SWIFT_ENDPOINT,
 		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 		ZB_ZCL_CLUSTER_SERVER_ROLE,
 		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MIN_VALUE_ID,
@@ -130,7 +150,7 @@ static void app_clusters_attr_init(void)
 		ZB_FALSE);
 
 	ZB_ZCL_SET_ATTRIBUTE(
-		APP_TEMPLATE_ENDPOINT,
+		APP_SWIFT_ENDPOINT,
 		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 		ZB_ZCL_CLUSTER_SERVER_ROLE,
 		ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_MAX_VALUE_ID,
@@ -140,7 +160,7 @@ static void app_clusters_attr_init(void)
 	// Modify min reporting interval period
 	zb_zcl_reporting_info_t *rep_info;
 
-	rep_info = zb_zcl_find_reporting_info(APP_TEMPLATE_ENDPOINT, ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT, ZB_ZCL_CLUSTER_SERVER_ROLE, ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID);
+	rep_info = zb_zcl_find_reporting_info(APP_SWIFT_ENDPOINT, ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT, ZB_ZCL_CLUSTER_SERVER_ROLE, ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID);
 
 	if (rep_info) {
 	    rep_info->u.send_info.def_min_interval = 60; // 1 minute
@@ -262,9 +282,6 @@ void check_join_status(zb_uint8_t param) {
     ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
 }
 
-int adc_setup(void); // In adc.c
-int32_t adc_run(void); // In adc.c
-
 void do_humidity_measurement(zb_uint8_t param) {
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
@@ -283,7 +300,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	k_msleep(1000); // Wait for output to stabilize
 
 	// Measurement
-	val_mv = adc_run();
+	val_mv = adc_probe();
 
 	// Power off the probe
 	gpio_pin_set_dt(&probe_vdd,0);
@@ -332,7 +349,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    dev_ctx.rel_humidity_attr.value = (humidity/10)*10; // Rounding at 10th
 
 	    ZB_ZCL_SET_ATTRIBUTE(
-		    APP_TEMPLATE_ENDPOINT,
+		    APP_SWIFT_ENDPOINT,
 		    ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 		    ZB_ZCL_CLUSTER_SERVER_ROLE,
 		    ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID,
@@ -352,7 +369,7 @@ int main(void)
 	LOG_INF("Starting ADC reading on AIN0");
 	adc_setup();
 
-	LOG_INF("Starting Zigbee application template example");
+	LOG_INF("Starting Zigbee application swift example");
 
 	/* Initialize */
 	configure_gpio();
@@ -365,7 +382,7 @@ int main(void)
 	ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb);
 
 	/* Register device context (endpoints). */
-	ZB_AF_REGISTER_DEVICE_CTX(&app_template_ctx);
+	ZB_AF_REGISTER_DEVICE_CTX(&app_swift_ctx);
 
 	app_clusters_attr_init();
 
@@ -376,14 +393,14 @@ int main(void)
 	zigbee_enable();
 
 	/* Start reporting */
-	if (RET_OK != zb_zcl_start_attr_reporting(APP_TEMPLATE_ENDPOINT,
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
 						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 						  ZB_ZCL_CLUSTER_SERVER_ROLE,
 						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
 	    LOG_INF("Failed to start Attribute reporting");
 	}
 
-	LOG_INF("Zigbee application template started");
+	LOG_INF("Zigbee application swift started");
 
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000));
 

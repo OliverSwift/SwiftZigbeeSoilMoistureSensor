@@ -13,7 +13,7 @@ set(DTC_OVERLAY_FILE "app.overlay")
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-project("Zigbee application template")
+project("Zigbee application Swift Soil Moisture Sensor")
 
 # NORDIC SDK APP START
 target_sources(app PRIVATE

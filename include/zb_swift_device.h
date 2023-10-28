@@ -24,7 +24,7 @@
 /** @cond internals_doc */
 
 /** Swift Device IN (server) clusters number */
-#define ZB_SWIFT_DEVICE_IN_CLUSTER_NUM 2
+#define ZB_SWIFT_DEVICE_IN_CLUSTER_NUM 3
 
 /** Swift Device OUT (client) clusters number */
 #define ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM 0
@@ -42,17 +42,28 @@ typedef struct {
     zb_uint16_t max_value;
 } zb_zcl_rel_humidity_attrs_t;
 
+typedef struct {
+    zb_uint8_t voltage;
+    zb_uint8_t size;
+    zb_uint8_t quantity;
+    zb_uint8_t rated_voltage;
+    zb_uint8_t alarm_mask;
+    zb_uint8_t voltage_min_threshold;
+} zb_zcl_power_config_attrs_t;
+
 /** @endcond */ /* internals_doc */
 
 /**
  * @brief Declare cluster list for Swift Device device
  * @param cluster_list_name - cluster list variable name
  * @param basic_attr_list - attribute list for Basic cluster
- * @param identify_attr_list - attribute list for Identify cluster
+ * @param power_attr_list - attribute list for Power Config cluster
+ * @param rh_humidity_attr_list - attribute list for Relative Humidity Cluster
  */
 #define ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(			      \
 		cluster_list_name,				      \
 		basic_attr_list,				      \
+		power_attr_list,				      \
 		rh_humidity_attr_list)				      \
 zb_zcl_cluster_desc_t cluster_list_name[] =			      \
 {								      \
@@ -64,9 +75,16 @@ zb_zcl_cluster_desc_t cluster_list_name[] =			      \
 		ZB_ZCL_MANUF_CODE_INVALID			      \
 	),							      \
 	ZB_ZCL_CLUSTER_DESC(					      \
-		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,			      \
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,			      \
+		ZB_ZCL_ARRAY_SIZE(power_attr_list, zb_zcl_attr_t),    \
+		(power_attr_list),				      \
+		ZB_ZCL_CLUSTER_SERVER_ROLE,			      \
+		ZB_ZCL_MANUF_CODE_INVALID			      \
+	),							      \
+	ZB_ZCL_CLUSTER_DESC(					      \
+		ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,	      \
 		ZB_ZCL_ARRAY_SIZE(rh_humidity_attr_list, zb_zcl_attr_t),   \
-		(rh_humidity_attr_list),				      \
+		(rh_humidity_attr_list),			      \
 		ZB_ZCL_CLUSTER_SERVER_ROLE,			      \
 		ZB_ZCL_MANUF_CODE_INVALID			      \
 	)							      \
@@ -94,6 +112,7 @@ zb_zcl_cluster_desc_t cluster_list_name[] =			      \
 		out_clust_num,								       \
 		{									       \
 			ZB_ZCL_CLUSTER_ID_BASIC,					       \
+			ZB_ZCL_CLUSTER_ID_POWER_CONFIG,					       \
 			ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT			       \
 		}									       \
 	}
