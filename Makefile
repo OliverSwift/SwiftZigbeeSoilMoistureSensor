@@ -1,14 +1,16 @@
-SRC=src/main.c src/adc.c include/zb_swift_device.h prj.conf
+SRC=src/main.c src/adc.c include/zb_swift_device.h app.overlay prj.conf
+BIN=build/zephyr/zephyr.bin
 
-all: build/zephyr/zephyr.bin
+all: $(BIN)
 
 clean:
 	west build -t clean
-	rm -f $(PKG)
 
-
-build/zephyr/zephyr.bin: $(SRC)
+$(BIN): $(SRC)
 	west build -b nrf52840dk_nrf52840
 
-flash: build/zephyr/merged.hex
+flash: $(BIN)
 	west flash
+
+sed:
+	west build -b nrf52840dk_nrf52840 -p -- -DCONF_FILE=prj_power_saving.conf

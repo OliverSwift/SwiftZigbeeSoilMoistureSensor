@@ -267,26 +267,19 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	}
 }
 
-void check_join_status(zb_uint8_t param) {
-    static uint8_t led_state = 1;
-
-    if (ZB_JOINED()) {
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
-	return;
-    }
-
-    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
-
-    led_state ^= 1;
-
-    ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
-}
-
 void do_humidity_measurement(zb_uint8_t param) {
+#ifdef VDD_3V
+    // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.0V
+#define MIN_MV 450
+#define MAX_MV 1825
+#else
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
 #define MAX_MV 2160
+#endif
+
 #define NB_SAMPLES 4
+#define PROBE_POWERUP_TIME_MS 500
 
 	int32_t val_mv;
 	static int32_t val_mv_samples[NB_SAMPLES];
@@ -297,7 +290,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Power on the probe
 	gpio_pin_set_dt(&probe_vdd,1);
-	k_msleep(1000); // Wait for output to stabilize
+	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
 	// Measurement
 	val_mv = adc_probe();
@@ -306,10 +299,9 @@ void do_humidity_measurement(zb_uint8_t param) {
 	gpio_pin_set_dt(&probe_vdd,0);
 
 	// Check minimum valid measurement
-
-	if (val_mv < 10) {
+	if (val_mv < 100) {
 	    LOG_WRN("Probe certainly unplugged. Retesting in 2 seconds.");
-	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000)); // Come back to check in 2 secs
+	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000)); // Come back to check in 2 secs
 	    return;
 	}
 
@@ -370,6 +362,23 @@ void do_humidity_measurement(zb_uint8_t param) {
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 }
 
+void check_join_status(zb_uint8_t param) {
+    static uint8_t led_state = 1;
+
+    if (ZB_JOINED()) {
+	// Light off LED and start measurements
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	do_humidity_measurement(0);
+	return;
+    }
+
+    led_state ^= 1;
+
+    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
+
+    ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
+}
+
 int main(void)
 {
 	LOG_INF("Starting ADC reading on AIN0 and AIN1");
@@ -407,8 +416,6 @@ int main(void)
 	}
 
 	LOG_INF("Zigbee application swift started");
-
-	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000));
 
 	ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 
