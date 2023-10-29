@@ -267,6 +267,24 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	}
 }
 
+void do_battery_measurement() {
+	uint8_t battery_voltage;
+
+	battery_voltage = adc_battery();
+
+	dev_ctx.power_config_attr.voltage = battery_voltage;
+
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_SWIFT_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
+		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
+		ZB_FALSE);
+
+	LOG_INF("Battery voltage: %d mv", battery_voltage*100);
+}
+
 void do_humidity_measurement(zb_uint8_t param) {
 #ifdef VDD_3V
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.0V
@@ -351,16 +369,14 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    humidity_last = humidity;
 
 	    LOG_INF("Updating humidity value: %d%%", humidity/100);
+
+	    do_battery_measurement(); // Take opportunity to update battery health
 	}
-
-	// TEST
-	uint8_t battery_voltage;
-
-	battery_voltage = adc_battery();
-	LOG_INF("Battery voltage: %d mv", battery_voltage*100);
 
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 }
+
+#define NETWORK_LED_PERIOD_MS 200
 
 void check_join_status(zb_uint8_t param) {
     static uint8_t led_state = 1;
@@ -376,7 +392,7 @@ void check_join_status(zb_uint8_t param) {
 
     dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
 
-    ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
+    ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(NETWORK_LED_PERIOD_MS));
 }
 
 int main(void)
@@ -417,7 +433,7 @@ int main(void)
 
 	LOG_INF("Zigbee application swift started");
 
-	ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
+	ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(NETWORK_LED_PERIOD_MS));
 
 	return 0;
 }
