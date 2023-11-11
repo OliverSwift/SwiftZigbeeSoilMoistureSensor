@@ -76,6 +76,7 @@ ZB_ZCL_DECLARE_REL_HUMIDITY_MEASUREMENT_ATTRIB_LIST(
 	&dev_ctx.rel_humidity_attr.max_value
 );
 
+/*
 ZB_ZCL_DECLARE_POWER_CONFIG_ATTRIB_LIST(
 	power_config_attr_list,
 	&dev_ctx.power_config_attr.voltage,
@@ -84,6 +85,14 @@ ZB_ZCL_DECLARE_POWER_CONFIG_ATTRIB_LIST(
 	&dev_ctx.power_config_attr.rated_voltage,
 	&dev_ctx.power_config_attr.alarm_mask,
 	&dev_ctx.power_config_attr.voltage_min_threshold
+);
+*/
+
+ZB_ZCL_DECLARE_POWER_CONFIG_ATTRIB_LIST2(
+	power_config_attr_list,
+	&dev_ctx.power_config_attr.voltage,
+	&dev_ctx.power_config_attr.percentage_remaining,
+	&dev_ctx.power_config_attr.alarm_state
 );
 
 ZB_DECLARE_SWIFT_DEVICE_CLUSTER_LIST(app_swift_clusters, basic_attr_list, power_config_attr_list, rel_humidity_attr_list);
@@ -435,6 +444,13 @@ int main(void)
 						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
 						  ZB_ZCL_CLUSTER_SERVER_ROLE,
 						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
+	    LOG_INF("Failed to start Attribute reporting");
+	}
+
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+						  ZB_ZCL_CLUSTER_SERVER_ROLE,
+						  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
 	    LOG_INF("Failed to start Attribute reporting");
 	}
 
