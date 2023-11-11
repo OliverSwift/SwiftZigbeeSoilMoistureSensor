@@ -103,6 +103,11 @@ ZBOSS_DECLARE_DEVICE_CTX_1_EP(
 /* Model number assigned by manufacturer (32-bytes long string). */
 #define SWIFT_INIT_BASIC_MODEL_ID        "Soil Moisture Sensor"
 
+/* Functions */
+void do_battery_measurement();
+void do_humidity_measurement(zb_uint8_t param);
+void check_join_status(zb_uint8_t param);
+
 /**@brief Function for initializing all clusters attributes. */
 static void app_clusters_attr_init(void)
 {
@@ -127,6 +132,8 @@ static void app_clusters_attr_init(void)
 	dev_ctx.power_config_attr.rated_voltage = 30; // 3V battery cell
 	dev_ctx.power_config_attr.alarm_mask = 0;
 	dev_ctx.power_config_attr.voltage_min_threshold = 16; // 1.6V is the minimum for the DCDC-Boost
+
+	do_battery_measurement();
 
 	/* Relative Humidity cluster attributes data. */
 	dev_ctx.rel_humidity_attr.value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_UNKNOWN;
@@ -279,7 +286,7 @@ void do_battery_measurement() {
 		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
 		ZB_ZCL_CLUSTER_SERVER_ROLE,
 		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
-		(zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
+		(zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
 		ZB_FALSE);
 
 	LOG_INF("Battery voltage: %d mv", battery_voltage*100);
