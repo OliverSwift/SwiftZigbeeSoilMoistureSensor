@@ -277,7 +277,7 @@ void do_battery_measurement() {
 	} else if (battery_voltage < 16) {
 	    dev_ctx.power_config_attr.percentage_remaining = 0;
 	} else {
-	    dev_ctx.power_config_attr.percentage_remaining = (battery_voltage-16)*100/14;
+	    dev_ctx.power_config_attr.percentage_remaining = (battery_voltage-16)*200/14;
 	}
 
 	ZB_ZCL_SET_ATTRIBUTE(
@@ -297,7 +297,7 @@ void do_battery_measurement() {
 		ZB_FALSE);
 
 	LOG_INF("Battery voltage:      %d mv", battery_voltage*100);
-	LOG_INF("Percentage remaining: %d%%", dev_ctx.power_config_attr.percentage_remaining);
+	LOG_INF("Percentage remaining: %d%%", dev_ctx.power_config_attr.percentage_remaining/2);
 }
 
 void do_humidity_measurement(zb_uint8_t param) {
