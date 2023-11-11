@@ -76,18 +76,6 @@ ZB_ZCL_DECLARE_REL_HUMIDITY_MEASUREMENT_ATTRIB_LIST(
 	&dev_ctx.rel_humidity_attr.max_value
 );
 
-/*
-ZB_ZCL_DECLARE_POWER_CONFIG_ATTRIB_LIST(
-	power_config_attr_list,
-	&dev_ctx.power_config_attr.voltage,
-	&dev_ctx.power_config_attr.size,
-	&dev_ctx.power_config_attr.quantity,
-	&dev_ctx.power_config_attr.rated_voltage,
-	&dev_ctx.power_config_attr.alarm_mask,
-	&dev_ctx.power_config_attr.voltage_min_threshold
-);
-*/
-
 ZB_ZCL_DECLARE_POWER_CONFIG_ATTRIB_LIST2(
 	power_config_attr_list,
 	&dev_ctx.power_config_attr.voltage,
@@ -136,11 +124,6 @@ static void app_clusters_attr_init(void)
 
 	/* Power Config attributes data. */
 	dev_ctx.power_config_attr.voltage = ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID;
-	dev_ctx.power_config_attr.size = ZB_ZCL_POWER_CONFIG_BATTERY_SIZE_CR123A;
-	dev_ctx.power_config_attr.quantity = 1;
-	dev_ctx.power_config_attr.rated_voltage = 30; // 3V battery cell
-	dev_ctx.power_config_attr.alarm_mask = 0;
-	dev_ctx.power_config_attr.voltage_min_threshold = 16; // 1.6V is the minimum for the DCDC-Boost
 
 	do_battery_measurement();
 
@@ -289,6 +272,13 @@ void do_battery_measurement() {
 	battery_voltage = adc_battery();
 
 	dev_ctx.power_config_attr.voltage = battery_voltage;
+	if (battery_voltage > 30) {
+	    dev_ctx.power_config_attr.percentage_remaining = 100;
+	} else if (battery_voltage < 16) {
+	    dev_ctx.power_config_attr.percentage_remaining = 0;
+	} else {
+	    dev_ctx.power_config_attr.percentage_remaining = (battery_voltage-16)*100/14;
+	}
 
 	ZB_ZCL_SET_ATTRIBUTE(
 		APP_SWIFT_ENDPOINT,
@@ -298,7 +288,16 @@ void do_battery_measurement() {
 		(zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
 		ZB_FALSE);
 
-	LOG_INF("Battery voltage: %d mv", battery_voltage*100);
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_SWIFT_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
+		(zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
+		ZB_FALSE);
+
+	LOG_INF("Battery voltage:      %d mv", battery_voltage*100);
+	LOG_INF("Percentage remaining: %d%%", dev_ctx.power_config_attr.percentage_remaining);
 }
 
 void do_humidity_measurement(zb_uint8_t param) {

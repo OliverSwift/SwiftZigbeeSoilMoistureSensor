@@ -53,11 +53,6 @@ typedef struct {
 
 typedef struct {
     zb_uint8_t voltage;
-    zb_uint8_t size;
-    zb_uint8_t quantity;
-    zb_uint8_t rated_voltage;
-    zb_uint8_t alarm_mask;
-    zb_uint8_t voltage_min_threshold;
     zb_uint8_t percentage_remaining; // Reportable
     zb_uint8_t alarm_state; // Reportable
 } zb_zcl_power_config_attrs_t;
