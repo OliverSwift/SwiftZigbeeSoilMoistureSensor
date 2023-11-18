@@ -162,9 +162,19 @@ static void app_clusters_attr_init(void)
 	rep_info = zb_zcl_find_reporting_info(APP_SWIFT_ENDPOINT, ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT, ZB_ZCL_CLUSTER_SERVER_ROLE, ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID);
 
 	if (rep_info) {
-	    rep_info->u.send_info.def_min_interval = 60; // 1 minute
+	    rep_info->u.send_info.def_min_interval = PROBE_INTERVAL_MS/1000;
+	    rep_info->u.send_info.def_max_interval = 7200; // 2 hours
 	} else {
 	    LOG_ERR("Can't find HUMIDITY attribute");
+	}
+
+	rep_info = zb_zcl_find_reporting_info(APP_SWIFT_ENDPOINT, ZB_ZCL_CLUSTER_ID_POWER_CONFIG, ZB_ZCL_CLUSTER_SERVER_ROLE, ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID);
+
+	if (rep_info) {
+	    rep_info->u.send_info.def_min_interval = PROBE_INTERVAL_MS/1000;
+	    rep_info->u.send_info.def_max_interval = 7200; // 2 hours
+	} else {
+	    LOG_ERR("Can't find POWER CONFIG attribute");
 	}
 }
 
@@ -249,7 +259,7 @@ void zboss_signal_handler(zb_bufid_t bufid)
 
 	/* Change long poll interval once device has joined */
 	if (setup_poll_interval && ZB_JOINED()) {
-	    zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS/2);
+	    zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS);
 	    setup_poll_interval = 0;
 	}
 
@@ -266,18 +276,22 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	}
 }
 
+#define BATTERY_HIGH_100MV 30
+#define BATTERY_LOW_100MV 16
+
 void do_battery_measurement() {
 	uint8_t battery_voltage;
 
-	battery_voltage = adc_battery();
+	battery_voltage = adc_battery(); // 100mv per unit
 
 	dev_ctx.power_config_attr.voltage = battery_voltage;
-	if (battery_voltage > 30) {
-	    dev_ctx.power_config_attr.percentage_remaining = 100;
-	} else if (battery_voltage < 16) {
+
+	if (battery_voltage > BATTERY_HIGH_100MV) {
+	    dev_ctx.power_config_attr.percentage_remaining = 200; // 200 half percent
+	} else if (battery_voltage < BATTERY_LOW_100MV) {
 	    dev_ctx.power_config_attr.percentage_remaining = 0;
 	} else {
-	    dev_ctx.power_config_attr.percentage_remaining = (battery_voltage-16)*200/14;
+	    dev_ctx.power_config_attr.percentage_remaining = (battery_voltage-BATTERY_LOW_100MV)*200/(BATTERY_HIGH_100MV-BATTERY_LOW_100MV);
 	}
 
 	ZB_ZCL_SET_ATTRIBUTE(
@@ -296,8 +310,7 @@ void do_battery_measurement() {
 		(zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
 		ZB_FALSE);
 
-	LOG_INF("Battery voltage:      %d mv", battery_voltage*100);
-	LOG_INF("Percentage remaining: %d%%", dev_ctx.power_config_attr.percentage_remaining/2);
+	LOG_INF("Battery voltage (capacity): %d mv (%d%%)", battery_voltage*100, dev_ctx.power_config_attr.percentage_remaining/2);
 }
 
 void do_humidity_measurement(zb_uint8_t param) {
