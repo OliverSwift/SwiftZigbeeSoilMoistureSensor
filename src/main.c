@@ -281,6 +281,7 @@ void zboss_signal_handler(zb_bufid_t bufid)
 
 void do_battery_measurement() {
 	uint8_t battery_voltage;
+	static uint8_t last_battery_voltage = 0xff;
 
 	battery_voltage = adc_battery(); // 100mv per unit
 
@@ -294,23 +295,29 @@ void do_battery_measurement() {
 	    dev_ctx.power_config_attr.percentage_remaining = (battery_voltage-BATTERY_LOW_100MV)*200/(BATTERY_HIGH_100MV-BATTERY_LOW_100MV);
 	}
 
-	ZB_ZCL_SET_ATTRIBUTE(
-		APP_SWIFT_ENDPOINT,
-		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-		ZB_ZCL_CLUSTER_SERVER_ROLE,
-		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
-		(zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
-		ZB_FALSE);
-
-	ZB_ZCL_SET_ATTRIBUTE(
-		APP_SWIFT_ENDPOINT,
-		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-		ZB_ZCL_CLUSTER_SERVER_ROLE,
-		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
-		(zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
-		ZB_FALSE);
-
 	LOG_INF("Battery voltage (capacity): %d mv (%d%%)", battery_voltage*100, dev_ctx.power_config_attr.percentage_remaining/2);
+
+	if (last_battery_voltage != battery_voltage) {
+	    ZB_ZCL_SET_ATTRIBUTE(
+		    APP_SWIFT_ENDPOINT,
+		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		    ZB_ZCL_CLUSTER_SERVER_ROLE,
+		    ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
+		    (zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
+		    ZB_FALSE);
+
+	    ZB_ZCL_SET_ATTRIBUTE(
+		    APP_SWIFT_ENDPOINT,
+		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		    ZB_ZCL_CLUSTER_SERVER_ROLE,
+		    ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
+		    (zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
+		    ZB_FALSE);
+
+	    last_battery_voltage = battery_voltage;
+
+	    LOG_INF("Reporting battery remaining percentage");
+	}
 }
 
 void do_humidity_measurement(zb_uint8_t param) {
@@ -324,8 +331,9 @@ void do_humidity_measurement(zb_uint8_t param) {
 #define MAX_MV 2160
 #endif
 
-#define NB_SAMPLES 4
+#define NB_SAMPLES 10
 #define PROBE_POWERUP_TIME_MS 500
+#define COUNTDOWN_INIT (4*3600*1000/PROBE_INTERVAL_MS)
 
 	int32_t val_mv;
 	static int32_t val_mv_samples[NB_SAMPLES];
@@ -333,6 +341,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	static int32_t val_mv_sum = -1;
 	uint16_t humidity; // 100 x H%
 	static uint16_t humidity_last = 0xffff;
+	static uint32_t force_report_countdown = COUNTDOWN_INIT; // When falling to 0, 4 hours, force reporting
 
 	// Power on the probe
 	gpio_pin_set_dt(&probe_vdd,1);
@@ -383,7 +392,13 @@ void do_humidity_measurement(zb_uint8_t param) {
 	    humidity = (humidity_last*3 + humidity)/4;
 	}
 
-	if (humidity/100 != humidity_last/100) {
+	LOG_INF("Mean %dmv -> Humidity %d [%d]", val_mv, humidity, humidity_last);
+
+	if (humidity/100 != humidity_last/100 || (force_report_countdown-- == 0)) {
+	    force_report_countdown = COUNTDOWN_INIT;
+
+	    do_battery_measurement(); // Take opportunity to update battery health
+
 	    dev_ctx.rel_humidity_attr.value = (humidity/10)*10; // Rounding at 10th
 
 	    ZB_ZCL_SET_ATTRIBUTE(
@@ -394,12 +409,10 @@ void do_humidity_measurement(zb_uint8_t param) {
 		    (zb_uint8_t *)&dev_ctx.rel_humidity_attr.value,
 		    ZB_FALSE);
 
-	    humidity_last = humidity;
-
 	    LOG_INF("Updating humidity value: %d%%", humidity/100);
-
-	    do_battery_measurement(); // Take opportunity to update battery health
 	}
+
+	humidity_last = humidity;
 
 	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 }
