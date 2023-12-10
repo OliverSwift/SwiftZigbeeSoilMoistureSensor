@@ -34,8 +34,8 @@
 
 	gpiocustom {
 		compatible = "gpio-keys";
-		probe_vdd: gpio1_15 {
-		    gpios = <&gpio1 15 GPIO_ACTIVE_LOW>;
+		probe_vdd: gpio1_13 {
+		    gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
 		};
 	};
 };
