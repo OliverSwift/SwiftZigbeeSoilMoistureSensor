@@ -20,7 +20,42 @@ Make sure you source the env.sh script that sets up SDK environment variables
 then type:
 
 ```
-# make flash
+# make
 ```
 
-With JLink Probe attached to PC and board
+# Nordic's page
+
+[SDK Installation ](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation.html)
+
+# Installing nrfjprog for flashing
+
+## Install nrf-Command-Line-Tools
+
+Download [here](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools)
+
+```
+# dpkg -i nrf-command-line-tools_10.24.0_amd64.deb
+```
+
+Last output lines propose to install JLink that comes with the package. This is the preferred way.
+
+## SEGGER JLink installation [optional]
+
+Install above should propose to install JLink which is recommended.
+
+However, it may also be installed manually:
+
+We need to install SEGGER JLink took first. Visit [SEGGER's download page](https://www.segger.com/downloads/jlink)
+And install Linux version.
+
+```
+# dpkg -i JLink_Linux_V794i_x86_64.deb
+```
+
+# Flashing the device
+
+With JLink Probe attached to PC and board type:
+
+```
+# make flash
+```
