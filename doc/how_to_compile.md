@@ -3,7 +3,7 @@
 2. Start it.
 3. Install Toolchain Manager.
 4. Launch Toolchain Manager (Click the Open button)
-5. Install nRF Connect SDK 4.2.1 (the one used here, lates may woek as well)
+5. Install nRF Connect SDK 2.4.1 (the one used here, lates may work as well)
 6. From the dropdown list select Generate Environment Script, save it to ~/ncs for example
 
 ~/ncs is where everything stands
