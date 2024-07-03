@@ -35,9 +35,6 @@ static const struct gpio_dt_spec probe_vdd = GPIO_DT_SPEC_GET(DT_NODELABEL(probe
 /* LED indicating that device successfully joined Zigbee network. */
 #define ZIGBEE_NETWORK_STATE_LED            DK_LED1
 
-/* Button to start Factory Reset */
-#define FACTORY_RESET_BUTTON                DK_BTN1_MSK
-
 /* Probe measurement interval */
 #define PROBE_INTERVAL_MS 60000
 
@@ -178,35 +175,12 @@ static void app_clusters_attr_init(void)
 	}
 }
 
-/**@brief Callback for button events.
- *
- * @param[in]   button_state  Bitmask containing buttons state.
- * @param[in]   has_changed   Bitmask containing buttons
- *                            that have changed their state.
- */
-static void button_changed(uint32_t button_state, uint32_t has_changed)
-{
-	if (FACTORY_RESET_BUTTON & has_changed) {
-		if (FACTORY_RESET_BUTTON & button_state) {
-			/* Button changed its state to pressed */
-		} else {
-			/* Button changed its state to released */
-			if (was_factory_reset_done()) {
-				/* The long press was for Factory Reset */
-				LOG_DBG("After Factory Reset - ignore button release");
-			}
-		}
-	}
-
-	check_factory_reset_button(button_state, has_changed);
-}
-
 /**@brief Function for initializing LEDs and Buttons. */
 static void configure_gpio(void)
 {
 	int err;
 
-	err = dk_buttons_init(button_changed);
+	err = dk_buttons_init(NULL);
 	if (err) {
 		LOG_ERR("Cannot init buttons (err: %d)", err);
 	}
@@ -255,7 +229,7 @@ static void zcl_device_cb(zb_bufid_t bufid)
  */
 void zboss_signal_handler(zb_bufid_t bufid)
 {
-	uint8_t setup_poll_interval = 1;
+	static uint8_t setup_poll_interval = 1;
 
 	/* Change long poll interval once device has joined */
 	if (setup_poll_interval && ZB_JOINED()) {
@@ -445,7 +419,6 @@ int main(void)
 
 	/* Initialize */
 	configure_gpio();
-	register_factory_reset_button(FACTORY_RESET_BUTTON);
 
 	/* Set Led on at startup */
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
@@ -459,10 +432,16 @@ int main(void)
 	app_clusters_attr_init();
 
 	/* Set Sleepy End Device mode */
+	zigbee_configure_sleepy_behavior(true);
 	zb_set_rx_on_when_idle(ZB_FALSE);
 
 	/* Start Zigbee default thread */
 	zigbee_enable();
+
+	if (dk_get_buttons() & DK_BTN1_MSK) {
+	    LOG_INF("BUTTON 1 pressed at start up - Scheduling Factory Reset");
+	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
+	}
 
 	/* Start reporting */
 	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
