@@ -297,6 +297,7 @@ void do_battery_measurement() {
 void do_humidity_measurement(zb_uint8_t param) {
 #ifdef VDD_3V
     // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.0V
+#pragma message("Probe supply 3V")
 #define MIN_MV 450
 #define MAX_MV 1825
 #else
