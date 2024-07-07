@@ -439,7 +439,7 @@ int main(void)
 	/* Start Zigbee default thread */
 	zigbee_enable();
 
-	if (dk_get_buttons() & DK_BTN2_MSK) {
+	if (dk_get_buttons() & DK_BTN3_MSK) {
 	    LOG_INF("BUTTON 2 pressed at start up - Scheduling Factory Reset");
 	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
 	}
