@@ -3,17 +3,20 @@
 2. Start it.
 3. Install Toolchain Manager.
 4. Launch Toolchain Manager (Click the Open button)
-5. Install nRF Connect SDK 2.4.1 (the one used here, lates may work as well)
+5. Install nRF Connect SDK 2.5.0 (tested, it appears that 2.6.1 doesn't work here)
 6. From the dropdown list select Generate Environment Script, save it to ~/ncs for example
 
 ~/ncs is where everything stands
 
+Tools for flashing are required, see below nrf Command line Tools.
 
-# Manually
+## Installing SDK Manually
+
+Not recommanded but working SDK may not be available from nRF Connect for Desktop later on.
 
 [Here](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation/install_ncs.html)
 
-# Compile
+## Compile the project
 
 Make sure you source the env.sh script that sets up SDK environment variables
 
@@ -23,9 +26,10 @@ then type:
 # make
 ```
 
-# Nordic's page
+## Nordic's page
 
-[SDK Installation ](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation.html)
+Source pages about installations:  [SDK Installation ](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation.html)
+
 
 # Installing nrfjprog for flashing
 
