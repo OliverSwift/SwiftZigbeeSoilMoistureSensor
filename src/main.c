@@ -37,7 +37,8 @@ static const struct gpio_dt_spec probe_vdd = GPIO_DT_SPEC_GET(DT_NODELABEL(probe
 #define ZIGBEE_NETWORK_STATE_LED            DK_LED1
 
 /* Probe measurement interval */
-#define PROBE_INTERVAL_MS 60000
+//#define PROBE_INTERVAL_MS 60000
+#define PROBE_INTERVAL_MS (CONFIG_PROBE_INTERVAL*1000)
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 

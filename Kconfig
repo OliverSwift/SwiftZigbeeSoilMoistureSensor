@@ -1,0 +1,5 @@
+source "Kconfig.zephyr"
+
+config PROBE_INTERVAL
+	int "Probe interval time (seconds)"
+	default 1800
