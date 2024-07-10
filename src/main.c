@@ -13,6 +13,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
 #include <dk_buttons_and_leds.h>
+#include <ram_pwrdn.h>
 
 #include <zboss_api.h>
 #include <zboss_api_addons.h>
@@ -434,6 +435,11 @@ int main(void)
 
 	/* Set Sleepy End Device mode */
 	zigbee_configure_sleepy_behavior(true);
+
+	/* Save power */
+#if CONFIG_RAM_POWER_DOWN_LIBRARY == 1
+	power_down_unused_ram();
+#endif
 
 	/* Start Zigbee default thread */
 	zigbee_enable();
