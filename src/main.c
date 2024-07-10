@@ -434,7 +434,6 @@ int main(void)
 
 	/* Set Sleepy End Device mode */
 	zigbee_configure_sleepy_behavior(true);
-	zb_set_rx_on_when_idle(ZB_FALSE);
 
 	/* Start Zigbee default thread */
 	zigbee_enable();
