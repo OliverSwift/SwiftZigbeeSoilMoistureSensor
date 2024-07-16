@@ -2,3 +2,4 @@ build
 *.zip
 fp-info-cache
 *.lck
+cad/SwiftSoilMoistureZigbeeSensor/Fab/
