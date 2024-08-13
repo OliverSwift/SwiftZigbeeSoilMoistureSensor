@@ -308,7 +308,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 #endif
 
 #define NB_SAMPLES 10
-#define PROBE_POWERUP_TIME_MS 500
+#define PROBE_POWERUP_TIME_MS 1000
 #define COUNTDOWN_INIT (4*3600*1000/PROBE_INTERVAL_MS)
 
 	int32_t val_mv;
@@ -320,6 +320,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	static uint32_t force_report_countdown = COUNTDOWN_INIT; // When falling to 0, 4 hours, force reporting
 
 	// Power on the probe
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 	gpio_pin_set_dt(&probe_vdd,1);
 	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
@@ -328,6 +329,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Power off the probe
 	gpio_pin_set_dt(&probe_vdd,0);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
 
 	// Check minimum valid measurement
 	if (val_mv < 100) {
