@@ -99,7 +99,7 @@ ZBOSS_DECLARE_DEVICE_CTX_1_EP(
 #define SWIFT_INIT_BASIC_MODEL_ID        "Soil Moisture Sensor"
 
 /* Functions */
-void do_battery_measurement();
+void do_battery_measurement(bool force_report);
 void do_humidity_measurement(zb_uint8_t param);
 void check_join_status(zb_uint8_t param);
 
@@ -123,7 +123,7 @@ static void app_clusters_attr_init(void)
 	/* Power Config attributes data. */
 	dev_ctx.power_config_attr.voltage = ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID;
 
-	do_battery_measurement();
+	do_battery_measurement(true);
 
 	/* Relative Humidity cluster attributes data. */
 	dev_ctx.rel_humidity_attr.value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_UNKNOWN;
@@ -254,7 +254,7 @@ void zboss_signal_handler(zb_bufid_t bufid)
 #define BATTERY_HIGH_100MV 30
 #define BATTERY_LOW_100MV 16
 
-void do_battery_measurement() {
+void do_battery_measurement(bool force_report) {
 	uint8_t battery_voltage;
 	static uint8_t last_battery_voltage = 0xff;
 
@@ -272,7 +272,7 @@ void do_battery_measurement() {
 
 	LOG_INF("Battery voltage (capacity): %d mv (%d%%)", battery_voltage*100, dev_ctx.power_config_attr.percentage_remaining/2);
 
-	if (last_battery_voltage != battery_voltage) {
+	if (last_battery_voltage != battery_voltage || force_report) {
 	    ZB_ZCL_SET_ATTRIBUTE(
 		    APP_SWIFT_ENDPOINT,
 		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
@@ -375,7 +375,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	if (humidity/100 != humidity_last/100 || (force_report_countdown-- == 0)) {
 	    force_report_countdown = COUNTDOWN_INIT;
 
-	    do_battery_measurement(); // Take opportunity to update battery health
+	    do_battery_measurement(true); // Take opportunity to update battery health
 
 	    dev_ctx.rel_humidity_attr.value = (humidity/10)*10; // Rounding at 10th
 
