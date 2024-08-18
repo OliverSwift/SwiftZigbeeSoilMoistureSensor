@@ -13,4 +13,4 @@ flash: $(BIN)
 	west flash
 
 sed:
-	west build -b nrf52840dk_nrf52840 -p -- -DCONF_FILE=prj_power_saving.conf
+	(west build -b nrf52840dk_nrf52840 -p -- -DCONF_FILE=prj_power_saving.conf 2>&1; md5sum build/zephyr/merged.hex) | tee -p /tmp/output-`date +%Y%m%d%H%M%S`.log
