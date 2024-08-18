@@ -361,16 +361,18 @@ void do_humidity_measurement(zb_uint8_t param) {
 	// Measurement
 	val_mv = adc_probe();
 
-	// Power off the probe
-	gpio_pin_set_dt(&probe_vdd,0);
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 
 	// Check minimum valid measurement
 	if (val_mv < 100) {
+	    // Don't power off the probe, this might happen at startup
 	    LOG_WRN("Probe certainly unplugged. Retesting in 2 seconds.");
 	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000)); // Come back to check in 2 secs
 	    return;
 	}
+
+	// Power off the probe
+	gpio_pin_set_dt(&probe_vdd,0);
 
 	// Low filtering
 	if (val_mv_sum == -1) {
