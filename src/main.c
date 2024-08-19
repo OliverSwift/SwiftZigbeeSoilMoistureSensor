@@ -99,7 +99,7 @@ ZBOSS_DECLARE_DEVICE_CTX_1_EP(
 #define SWIFT_INIT_BASIC_MODEL_ID        "Soil Moisture Sensor"
 
 /* Functions */
-void do_battery_measurement(bool force_report);
+void do_battery_measurement();
 void do_humidity_measurement(zb_uint8_t param);
 void check_join_status(zb_uint8_t param);
 
@@ -123,7 +123,7 @@ static void app_clusters_attr_init(void)
 	/* Power Config attributes data. */
 	dev_ctx.power_config_attr.voltage = ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID;
 
-	do_battery_measurement(true);
+	do_battery_measurement();
 
 	/* Relative Humidity cluster attributes data. */
 	dev_ctx.rel_humidity_attr.value = ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_UNKNOWN;
@@ -288,9 +288,8 @@ void zboss_signal_handler(zb_bufid_t bufid)
 #define BATTERY_HIGH_100MV 30
 #define BATTERY_LOW_100MV 16
 
-void do_battery_measurement(bool force_report) {
+void do_battery_measurement() {
 	uint8_t battery_voltage;
-	static uint8_t last_battery_voltage = 0xff;
 
 	battery_voltage = adc_battery(); // 100mv per unit
 
@@ -306,27 +305,21 @@ void do_battery_measurement(bool force_report) {
 
 	LOG_INF("Battery voltage (capacity): %d mv (%d%%)", battery_voltage*100, dev_ctx.power_config_attr.percentage_remaining/2);
 
-	if (last_battery_voltage != battery_voltage || force_report) {
-	    ZB_ZCL_SET_ATTRIBUTE(
-		    APP_SWIFT_ENDPOINT,
-		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-		    ZB_ZCL_CLUSTER_SERVER_ROLE,
-		    ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
-		    (zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
-		    ZB_FALSE);
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_SWIFT_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
+		(zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
+		ZB_FALSE);
 
-	    ZB_ZCL_SET_ATTRIBUTE(
-		    APP_SWIFT_ENDPOINT,
-		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-		    ZB_ZCL_CLUSTER_SERVER_ROLE,
-		    ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
-		    (zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
-		    ZB_FALSE);
-
-	    last_battery_voltage = battery_voltage;
-
-	    LOG_INF("Reporting battery remaining percentage");
-	}
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_SWIFT_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
+		(zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
+		ZB_FALSE);
 }
 
 void do_humidity_measurement(zb_uint8_t param) {
@@ -346,9 +339,6 @@ void do_humidity_measurement(zb_uint8_t param) {
 #define COUNTDOWN_INIT (4*3600*1000/PROBE_INTERVAL_MS)
 
 	int32_t val_mv;
-	static int32_t val_mv_samples[NB_SAMPLES];
-	static int val_mv_cur = 0;
-	static int32_t val_mv_sum = -1;
 	uint16_t humidity; // 100 x H%
 	static uint16_t humidity_last = 0xffff;
 	static uint32_t force_report_countdown = COUNTDOWN_INIT; // When falling to 0, 4 hours, force reporting
@@ -374,21 +364,6 @@ void do_humidity_measurement(zb_uint8_t param) {
 	// Power off the probe
 	gpio_pin_set_dt(&probe_vdd,0);
 
-	// Low filtering
-	if (val_mv_sum == -1) {
-	    for(int i=0; i < NB_SAMPLES; i++) {
-		val_mv_samples[i] = val_mv;
-	    }
-	    val_mv_sum = NB_SAMPLES*val_mv;
-	} else {
-	    val_mv_sum -= val_mv_samples[val_mv_cur];
-	    val_mv_samples[val_mv_cur] = val_mv;
-	    val_mv_sum += val_mv;
-	    val_mv_cur = (val_mv_cur + 1) % NB_SAMPLES;
-	}
-
-	val_mv = val_mv_sum / NB_SAMPLES;
-
 	if (val_mv < MIN_MV) {
 	    humidity = 100; // Max humidity
 	} else if (val_mv > MAX_MV) {
@@ -411,7 +386,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	if (humidity/100 != humidity_last/100 || (force_report_countdown-- == 0)) {
 	    force_report_countdown = COUNTDOWN_INIT;
 
-	    do_battery_measurement(true); // Take opportunity to update battery health
+	    do_battery_measurement(); // Take opportunity to update battery health
 
 	    dev_ctx.rel_humidity_attr.value = (humidity/10)*10; // Rounding at 10th
 
