@@ -223,6 +223,8 @@ static void zcl_device_cb(zb_bufid_t bufid)
 	LOG_INF("%s status: %hd", __func__, device_cb_param->status);
 }
 
+static bool joined = false;
+
 /**@brief Zigbee stack event handler.
  *
  * @param[in]   bufid   Reference to the Zigbee stack buffer
@@ -230,25 +232,57 @@ static void zcl_device_cb(zb_bufid_t bufid)
  */
 void zboss_signal_handler(zb_bufid_t bufid)
 {
-	static uint8_t setup_poll_interval = 1;
+    zb_zdo_app_signal_hdr_t * p_sg_p = NULL;
+    zb_zdo_app_signal_type_t sig = zb_get_app_signal(bufid, &p_sg_p);
+    zb_ret_t status = ZB_GET_APP_SIGNAL_STATUS(bufid);
 
-	/* Change long poll interval once device has joined */
-	if (setup_poll_interval && ZB_JOINED()) {
-	    zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS);
-	    setup_poll_interval = 0;
-	}
+    switch (sig) {
+    case ZB_BDB_SIGNAL_DEVICE_REBOOT:
+	    /* fall-through */
+    case ZB_BDB_SIGNAL_STEERING:
+	    if (status == RET_OK) {
+		LOG_INF("Joined network successfully");
+		/* Change long poll interval once device has joined */
+		zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS);
 
-	/* No application-specific behavior is required.
-	 * Call default signal handler.
-	 */
+		/* Start reporting */
+		if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+							  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+							  ZB_ZCL_CLUSTER_SERVER_ROLE,
+							  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
+		    LOG_INF("Failed to start Attribute reporting");
+		}
+
+		if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+							  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+							  ZB_ZCL_CLUSTER_SERVER_ROLE,
+							  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
+		    LOG_INF("Failed to start Attribute reporting");
+		}
+
+		joined = true;
+	    } else {
+		zb_bool_t comm_status;
+		LOG_INF("Unable to join the network. Restart network steering.");
+		comm_status = bdb_start_top_level_commissioning(ZB_BDB_NETWORK_STEERING);
+		ZB_COMM_STATUS_CHECK(comm_status);
+
+		joined = false;
+	    }
+	break;
+    default:
+	// Call default signal handler.
 	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
+	break;
+    }
 
-	/* All callbacks should either reuse or free passed buffers.
-	 * If bufid == 0, the buffer is invalid (not passed).
-	 */
-	if (bufid) {
-		zb_buf_free(bufid);
-	}
+    /* All callbacks should either reuse or free passed buffers.
+    * If bufid == 0, the buffer is invalid (not passed).
+    */
+    if (bufid) {
+	zb_buf_free(bufid);
+    }
+
 }
 
 #define BATTERY_HIGH_100MV 30
@@ -256,7 +290,6 @@ void zboss_signal_handler(zb_bufid_t bufid)
 
 void do_battery_measurement() {
 	uint8_t battery_voltage;
-	static uint8_t last_battery_voltage = 0xff;
 
 	battery_voltage = adc_battery(); // 100mv per unit
 
@@ -272,27 +305,21 @@ void do_battery_measurement() {
 
 	LOG_INF("Battery voltage (capacity): %d mv (%d%%)", battery_voltage*100, dev_ctx.power_config_attr.percentage_remaining/2);
 
-	if (last_battery_voltage != battery_voltage) {
-	    ZB_ZCL_SET_ATTRIBUTE(
-		    APP_SWIFT_ENDPOINT,
-		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-		    ZB_ZCL_CLUSTER_SERVER_ROLE,
-		    ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
-		    (zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
-		    ZB_FALSE);
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_SWIFT_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_VOLTAGE_ID,
+		(zb_uint8_t *)&dev_ctx.power_config_attr.voltage,
+		ZB_FALSE);
 
-	    ZB_ZCL_SET_ATTRIBUTE(
-		    APP_SWIFT_ENDPOINT,
-		    ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-		    ZB_ZCL_CLUSTER_SERVER_ROLE,
-		    ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
-		    (zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
-		    ZB_FALSE);
-
-	    last_battery_voltage = battery_voltage;
-
-	    LOG_INF("Reporting battery remaining percentage");
-	}
+	ZB_ZCL_SET_ATTRIBUTE(
+		APP_SWIFT_ENDPOINT,
+		ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+		ZB_ZCL_CLUSTER_SERVER_ROLE,
+		ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
+		(zb_uint8_t *)&dev_ctx.power_config_attr.percentage_remaining,
+		ZB_FALSE);
 }
 
 void do_humidity_measurement(zb_uint8_t param) {
@@ -308,48 +335,34 @@ void do_humidity_measurement(zb_uint8_t param) {
 #endif
 
 #define NB_SAMPLES 10
-#define PROBE_POWERUP_TIME_MS 500
+#define PROBE_POWERUP_TIME_MS 1000
 #define COUNTDOWN_INIT (4*3600*1000/PROBE_INTERVAL_MS)
 
 	int32_t val_mv;
-	static int32_t val_mv_samples[NB_SAMPLES];
-	static int val_mv_cur = 0;
-	static int32_t val_mv_sum = -1;
 	uint16_t humidity; // 100 x H%
 	static uint16_t humidity_last = 0xffff;
 	static uint32_t force_report_countdown = COUNTDOWN_INIT; // When falling to 0, 4 hours, force reporting
 
 	// Power on the probe
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
 	gpio_pin_set_dt(&probe_vdd,1);
 	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
 	// Measurement
 	val_mv = adc_probe();
 
-	// Power off the probe
-	gpio_pin_set_dt(&probe_vdd,0);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 
 	// Check minimum valid measurement
 	if (val_mv < 100) {
+	    // Don't power off the probe, this might happen at startup
 	    LOG_WRN("Probe certainly unplugged. Retesting in 2 seconds.");
 	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000)); // Come back to check in 2 secs
 	    return;
 	}
 
-	// Low filtering
-	if (val_mv_sum == -1) {
-	    for(int i=0; i < NB_SAMPLES; i++) {
-		val_mv_samples[i] = val_mv;
-	    }
-	    val_mv_sum = NB_SAMPLES*val_mv;
-	} else {
-	    val_mv_sum -= val_mv_samples[val_mv_cur];
-	    val_mv_samples[val_mv_cur] = val_mv;
-	    val_mv_sum += val_mv;
-	    val_mv_cur = (val_mv_cur + 1) % NB_SAMPLES;
-	}
-
-	val_mv = val_mv_sum / NB_SAMPLES;
+	// Power off the probe
+	gpio_pin_set_dt(&probe_vdd,0);
 
 	if (val_mv < MIN_MV) {
 	    humidity = 100; // Max humidity
@@ -398,16 +411,16 @@ void do_humidity_measurement(zb_uint8_t param) {
 void check_join_status(zb_uint8_t param) {
     static uint8_t led_state = 1;
 
-    if (ZB_JOINED()) {
+    if (joined) {
 	// Light off LED and start measurements
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 	do_humidity_measurement(0);
 	return;
     }
 
     led_state ^= 1;
 
-    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
+    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state^1);
 
     ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(NETWORK_LED_PERIOD_MS));
 }
@@ -423,7 +436,7 @@ int main(void)
 	configure_gpio();
 
 	/* Set Led on at startup */
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
 
 	/* Register callback for handling ZCL commands. */
 	ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb);
@@ -447,21 +460,6 @@ int main(void)
 	if (dk_get_buttons() & DK_BTN3_MSK) {
 	    LOG_INF("BUTTON 2 pressed at start up - Scheduling Factory Reset");
 	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
-	}
-
-	/* Start reporting */
-	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
-						  ZB_ZCL_CLUSTER_SERVER_ROLE,
-						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
-	    LOG_INF("Failed to start Attribute reporting");
-	}
-
-	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-						  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-						  ZB_ZCL_CLUSTER_SERVER_ROLE,
-						  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
-	    LOG_INF("Failed to start Attribute reporting");
 	}
 
 	LOG_INF("Zigbee application swift started");
