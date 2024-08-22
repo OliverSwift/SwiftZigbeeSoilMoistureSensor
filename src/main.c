@@ -344,14 +344,14 @@ void do_humidity_measurement(zb_uint8_t param) {
 	static uint32_t force_report_countdown = COUNTDOWN_INIT; // When falling to 0, 4 hours, force reporting
 
 	// Power on the probe
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 	gpio_pin_set_dt(&probe_vdd,1);
 	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
 	// Measurement
 	val_mv = adc_probe();
 
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
 
 	// Check minimum valid measurement
 	if (val_mv < 100) {
@@ -413,7 +413,7 @@ void check_join_status(zb_uint8_t param) {
 
     if (joined) {
 	// Light off LED and start measurements
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
 	do_humidity_measurement(0);
 	return;
     }
@@ -436,7 +436,7 @@ int main(void)
 	configure_gpio();
 
 	/* Set Led on at startup */
-	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
 
 	/* Register callback for handling ZCL commands. */
 	ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb);
