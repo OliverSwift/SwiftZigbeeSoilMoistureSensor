@@ -4,13 +4,15 @@ BIN=build/zephyr/zephyr.bin
 all: $(BIN)
 
 clean:
-	west build -t clean
+	rm -rf ${HOME}/.cache/ccache
+	rm -rf ${HOME}/.cache/zephyr
+	rm -rf build
 
 $(BIN): $(SRC)
-	west build -b nrf52840dk_nrf52840
+	west build -- -DCONF_FILE=prj.conf
 
 flash: $(BIN)
 	west flash
 
 sed:
-	(west build -b nrf52840dk_nrf52840 -p -- -DCONF_FILE=prj_power_saving.conf 2>&1; md5sum build/zephyr/merged.hex) | tee -p /tmp/output-`date +%Y%m%d%H%M%S`.log
+	(west build -p 2>&1; md5sum build/zephyr/merged.hex) | tee -p /tmp/output-`date +%Y%m%d%H%M%S`.log
