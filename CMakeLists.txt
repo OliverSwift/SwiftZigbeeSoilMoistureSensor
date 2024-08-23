@@ -7,6 +7,8 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 set(DTC_OVERLAY_FILE "app.overlay")
+set(BOARD "nrf52840dk_nrf52840")
+set(CONF_FILE "prj_power_saving.conf")
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
