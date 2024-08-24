@@ -243,6 +243,7 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	    if (status == RET_OK) {
 		LOG_INF("Joined network successfully");
 		/* Change long poll interval once device has joined */
+		zb_zdo_pim_permit_turbo_poll(ZB_FALSE);
 		zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS);
 
 		/* Start reporting */
@@ -448,6 +449,9 @@ int main(void)
 
 	/* Set Sleepy End Device mode */
 	zigbee_configure_sleepy_behavior(true);
+
+	zb_set_keepalive_mode(ED_KEEPALIVE_DISABLED);
+	zb_set_ed_timeout(ED_AGING_TIMEOUT_256MIN);
 
 	/* Save power */
 #if CONFIG_RAM_POWER_DOWN_LIBRARY == 1
