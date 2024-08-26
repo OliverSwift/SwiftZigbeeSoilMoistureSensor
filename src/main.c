@@ -286,13 +286,18 @@ void zboss_signal_handler(zb_bufid_t bufid)
 
 }
 
-#define BATTERY_HIGH_100MV 30
+#define BATTERY_HIGH_100MV 28
 #define BATTERY_LOW_100MV 16
 
 void do_battery_measurement() {
 	uint8_t battery_voltage;
 
 	battery_voltage = adc_battery(); // 100mv per unit
+
+	if (dev_ctx.power_config_attr.voltage != ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID) {
+	    // Low filter
+	    battery_voltage = (uint8_t)((uint16_t)dev_ctx.power_config_attr.voltage * 3 + (uint16_t)battery_voltage)/4;
+	}
 
 	dev_ctx.power_config_attr.voltage = battery_voltage;
 
