@@ -296,7 +296,7 @@ void do_battery_measurement() {
 
 	if (dev_ctx.power_config_attr.voltage != ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID) {
 	    // Low filter
-	    battery_voltage = (uint8_t)((uint16_t)dev_ctx.power_config_attr.voltage * 3 + (uint16_t)battery_voltage)/4;
+	    battery_voltage = (uint8_t)((uint16_t)dev_ctx.power_config_attr.voltage * 3 + (uint16_t)battery_voltage + 2)/4;
 	}
 
 	dev_ctx.power_config_attr.voltage = battery_voltage;
@@ -384,7 +384,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	// Low filter
 	if (humidity_last != 0xffff) {
-	    humidity = (humidity_last*3 + humidity)/4;
+	    humidity = (humidity_last*3 + humidity +2)/4;
 	}
 
 	LOG_INF("Mean %dmv -> Humidity %d [%d]", val_mv, humidity, humidity_last);
