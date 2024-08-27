@@ -1702,7 +1702,7 @@
     (property "Datasheet" "~" (at 46.99 102.87 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "LCSC" "C49257" (at 46.99 102.87 0)
+    (property "LCSC" "C6332197" (at 46.99 102.87 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "2" (uuid 5b90ca2d-9a88-4c04-8572-189802edd33a))
