@@ -1,6 +1,9 @@
 build
+prod
 *.zip
 fp-info-cache
 *.lck
 cad/SwiftSoilMoistureZigbeeSensor/Fab/
+cad/SwiftSoilMoistureZigbeeSensor/*.csv
+cad/SwiftSoilMoistureZigbeeSensor/*.xml
 archives
