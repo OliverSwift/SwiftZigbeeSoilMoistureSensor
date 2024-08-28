@@ -271,6 +271,13 @@ void zboss_signal_handler(zb_bufid_t bufid)
 		joined = false;
 	    }
 	break;
+    case ZB_ZDO_SIGNAL_SKIP_STARTUP:
+	if ((!zb_bdb_is_factory_new()) && (dk_get_buttons() & DK_BTN3_MSK)) {
+	    LOG_INF("FACTORY RESET BUTTON pressed at start up - Scheduling Factory Reset");
+	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
+	    break;
+	}
+	// Fallthru
     default:
 	// Call default signal handler.
 	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
@@ -296,7 +303,7 @@ void do_battery_measurement() {
 
 	if (dev_ctx.power_config_attr.voltage != ZB_ZCL_POWER_CONFIG_BATTERY_VOLTAGE_INVALID) {
 	    // Low filter
-	    battery_voltage = (uint8_t)((uint16_t)dev_ctx.power_config_attr.voltage * 3 + (uint16_t)battery_voltage + 2)/4;
+	    battery_voltage = (uint8_t)(((uint16_t)dev_ctx.power_config_attr.voltage * 3 + (uint16_t)battery_voltage + 2)/4);
 	}
 
 	dev_ctx.power_config_attr.voltage = battery_voltage;
@@ -465,11 +472,6 @@ int main(void)
 
 	/* Start Zigbee default thread */
 	zigbee_enable();
-
-	if (dk_get_buttons() & DK_BTN3_MSK) {
-	    LOG_INF("BUTTON 2 pressed at start up - Scheduling Factory Reset");
-	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
-	}
 
 	LOG_INF("Zigbee application swift started");
 
