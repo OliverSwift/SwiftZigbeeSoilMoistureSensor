@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/sys/reboot.h>
 #include <dk_buttons_and_leds.h>
 #include <ram_pwrdn.h>
 
@@ -238,51 +239,43 @@ void zboss_signal_handler(zb_bufid_t bufid)
 
     switch (sig) {
     case ZB_BDB_SIGNAL_DEVICE_REBOOT:
-	    /* fall-through */
+	/* fall-through */
     case ZB_BDB_SIGNAL_STEERING:
-	    if (status == RET_OK) {
-		LOG_INF("Joined network successfully");
-		/* Change long poll interval once device has joined */
-		zb_zdo_pim_permit_turbo_poll(ZB_FALSE);
-		zb_zdo_pim_set_long_poll_interval(PROBE_INTERVAL_MS);
+	if (status == RET_OK) {
+	    LOG_INF("Joined network successfully");
+	    /* Change long poll interval once device has joined */
+	    zb_zdo_pim_set_long_poll_interval(120*1000); // 2 minutes should be enough
 
-		/* Start reporting */
-		if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-							  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
-							  ZB_ZCL_CLUSTER_SERVER_ROLE,
-							  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
-		    LOG_INF("Failed to start Attribute reporting");
-		}
-
-		if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-							  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-							  ZB_ZCL_CLUSTER_SERVER_ROLE,
-							  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
-		    LOG_INF("Failed to start Attribute reporting");
-		}
-
-		joined = true;
-	    } else {
-		zb_bool_t comm_status;
-		LOG_INF("Unable to join the network. Restart network steering.");
-		comm_status = bdb_start_top_level_commissioning(ZB_BDB_NETWORK_STEERING);
-		ZB_COMM_STATUS_CHECK(comm_status);
-
-		joined = false;
-	    }
+	    joined = true;
+	} else {
+	    joined = false;
+	}
 	break;
     case ZB_ZDO_SIGNAL_SKIP_STARTUP:
+	/* Start reporting */
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+						  ZB_ZCL_CLUSTER_SERVER_ROLE,
+						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
+	    LOG_INF("Failed to start Attribute reporting");
+	}
+
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+						  ZB_ZCL_CLUSTER_SERVER_ROLE,
+						  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
+	    LOG_INF("Failed to start Attribute reporting");
+	}
+
 	if ((!zb_bdb_is_factory_new()) && (dk_get_buttons() & DK_BTN3_MSK)) {
 	    LOG_INF("FACTORY RESET BUTTON pressed at start up - Scheduling Factory Reset");
 	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
-	    break;
 	}
-	// Fallthru
-    default:
-	// Call default signal handler.
-	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
 	break;
     }
+
+    // Call default signal handler.
+    ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
 
     /* All callbacks should either reuse or free passed buffers.
     * If bufid == 0, the buffer is invalid (not passed).
@@ -462,7 +455,6 @@ int main(void)
 	/* Set Sleepy End Device mode */
 	zigbee_configure_sleepy_behavior(true);
 
-	zb_set_keepalive_mode(ED_KEEPALIVE_DISABLED);
 	zb_set_ed_timeout(ED_AGING_TIMEOUT_256MIN);
 
 	/* Save power */
