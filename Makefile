@@ -21,7 +21,7 @@ sed:
 prod:
 	mkdir -p prod
 	cmake -B prod -S .
-	cmake --build prod
+	cmake --build prod -- -j
 	md5sum prod/zephyr/merged.hex
 
 flash_prod: prod/zephyr/merged.hex
