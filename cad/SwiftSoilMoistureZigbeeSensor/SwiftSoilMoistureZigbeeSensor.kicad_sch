@@ -1864,7 +1864,7 @@
     (property "Reference" "R1" (at 139.7 99.06 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "220Ω" (at 139.7 101.6 0)
+    (property "Value" "680Ω" (at 139.7 101.6 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 135.382 100.33 90)
