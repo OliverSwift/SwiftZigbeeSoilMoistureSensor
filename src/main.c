@@ -246,36 +246,51 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	    /* Change long poll interval once device has joined */
 	    zb_zdo_pim_set_long_poll_interval(120*1000); // 2 minutes should be enough
 
+	    /* Start reporting */
+	    if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						      ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+						      ZB_ZCL_CLUSTER_SERVER_ROLE,
+						      ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
+		LOG_INF("Failed to start Attribute reporting");
+	    }
+
+	    if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						      ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+						      ZB_ZCL_CLUSTER_SERVER_ROLE,
+						      ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
+		LOG_INF("Failed to start Attribute reporting");
+	    }
+
 	    joined = true;
 	} else {
 	    joined = false;
 	}
+	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
+	break;
+    case ZB_ZDO_SIGNAL_LEAVE:
+	// Wait until Factory reset is released, then RESET
+	// Meanwhile fast LED blinking
+	while(dk_get_buttons() & DK_BTN3_MSK) {
+	    dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
+	    k_msleep(100);
+	    dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
+	    k_msleep(100);
+	}
+	sys_reboot(SYS_REBOOT_COLD);
 	break;
     case ZB_ZDO_SIGNAL_SKIP_STARTUP:
-	/* Start reporting */
-	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
-						  ZB_ZCL_CLUSTER_SERVER_ROLE,
-						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
-	    LOG_INF("Failed to start Attribute reporting");
-	}
-
-	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-						  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-						  ZB_ZCL_CLUSTER_SERVER_ROLE,
-						  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
-	    LOG_INF("Failed to start Attribute reporting");
-	}
-
-	if ((!zb_bdb_is_factory_new()) && (dk_get_buttons() & DK_BTN3_MSK)) {
+	if (zigbee_is_stack_started() && (!zb_bdb_is_factory_new()) && (dk_get_buttons() & DK_BTN3_MSK)) {
 	    LOG_INF("FACTORY RESET BUTTON pressed at start up - Scheduling Factory Reset");
 	    ZB_SCHEDULE_APP_CALLBACK(zb_bdb_reset_via_local_action, 0);
+	    break;
 	}
+	// Fallthru
+    default:
+	// Call default signal handler.
+	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
 	break;
     }
 
-    // Call default signal handler.
-    ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
 
     /* All callbacks should either reuse or free passed buffers.
     * If bufid == 0, the buffer is invalid (not passed).
