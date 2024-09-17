@@ -1502,7 +1502,7 @@
     (property "Value" "4.7µH" (at 175.26 46.99 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "Inductor_SMD:L_Wuerth_MAPI-4020" (at 175.26 49.53 0)
+    (property "Footprint" "Inductor_SMD:L_Taiyo-Yuden_NR-30xx" (at 175.26 49.53 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 175.26 49.53 0)
