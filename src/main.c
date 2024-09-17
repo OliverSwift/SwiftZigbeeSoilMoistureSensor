@@ -175,6 +175,21 @@ static void app_clusters_attr_init(void)
 	} else {
 	    LOG_ERR("Can't find POWER CONFIG attribute");
 	}
+
+	/* Install reporting */
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						  ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
+						  ZB_ZCL_CLUSTER_SERVER_ROLE,
+						  ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
+	    LOG_INF("Failed to start Attribute reporting");
+	}
+
+	if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
+						  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+						  ZB_ZCL_CLUSTER_SERVER_ROLE,
+						  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
+	    LOG_INF("Failed to start Attribute reporting");
+	}
 }
 
 /**@brief Function for initializing LEDs and Buttons. */
@@ -225,6 +240,7 @@ static void zcl_device_cb(zb_bufid_t bufid)
 }
 
 static bool joined = false;
+static bool first_start = false;
 
 /**@brief Zigbee stack event handler.
  *
@@ -238,6 +254,10 @@ void zboss_signal_handler(zb_bufid_t bufid)
     zb_ret_t status = ZB_GET_APP_SIGNAL_STATUS(bufid);
 
     switch (sig) {
+    case ZB_BDB_SIGNAL_DEVICE_FIRST_START:
+	first_start = true;
+	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
+	break;
     case ZB_BDB_SIGNAL_DEVICE_REBOOT:
 	/* fall-through */
     case ZB_BDB_SIGNAL_STEERING:
@@ -245,21 +265,6 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	    LOG_INF("Joined network successfully");
 	    /* Change long poll interval once device has joined */
 	    zb_zdo_pim_set_long_poll_interval(120*1000); // 2 minutes should be enough
-
-	    /* Start reporting */
-	    if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-						      ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT,
-						      ZB_ZCL_CLUSTER_SERVER_ROLE,
-						      ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID)) {
-		LOG_INF("Failed to start Attribute reporting");
-	    }
-
-	    if (RET_OK != zb_zcl_start_attr_reporting(APP_SWIFT_ENDPOINT,
-						      ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-						      ZB_ZCL_CLUSTER_SERVER_ROLE,
-						      ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID)) {
-		LOG_INF("Failed to start Attribute reporting");
-	    }
 
 	    joined = true;
 	} else {
@@ -435,7 +440,11 @@ void check_join_status(zb_uint8_t param) {
     if (joined) {
 	// Light off LED and start measurements
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
-	do_humidity_measurement(0);
+	if (first_start) {
+	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(15000)); // Delayed first measurement
+	} else {
+	    do_humidity_measurement(0);
+	}
 	return;
     }
 
