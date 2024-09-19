@@ -270,6 +270,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model "${KIPRJMOD}/../B3FS-1010/B3FS-1010.STEP"
+      (offset (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 0))
+    )
   )
 
   (footprint "Resistor_SMD:R_0603_1608Metric" (layer "F.Cu")
@@ -720,6 +725,11 @@
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
+    )
+    (model "${KIPRJMOD}/../NR3015T4R7M/NR3015T4R7M.stp"
+      (offset (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 0))
     )
   )
 
