@@ -6,8 +6,8 @@
 
   (title_block
     (title "Swift Zigbee Soil Moisture Sensor")
-    (date "2024-08-13")
-    (rev "1.1")
+    (date "2024-09-10")
+    (rev "1.2")
   )
 
   (lib_symbols
