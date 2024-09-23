@@ -26,3 +26,5 @@ prod:
 
 flash_prod: prod prod/zephyr/merged.hex
 	nrfjprog -f NRF52 --program prod/zephyr/merged.hex --sectoranduicrerase --verify --reset
+	@echo "Readback protection. Setting UICR.APPROTECT to 0x00"
+	nrfjprog --memwr 0x10001208 --val 0x00
