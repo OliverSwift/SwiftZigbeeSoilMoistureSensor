@@ -259,7 +259,6 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	ZB_ERROR_CHECK(zigbee_default_signal_handler(bufid));
 	break;
     case ZB_BDB_SIGNAL_DEVICE_REBOOT:
-	/* fall-through */
     case ZB_BDB_SIGNAL_STEERING:
 	if (status == RET_OK) {
 	    LOG_INF("Joined network successfully");
@@ -429,7 +428,12 @@ void do_humidity_measurement(zb_uint8_t param) {
 
 	humidity_last = humidity;
 
-	ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
+	if (first_start) {
+	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(15000)); // Shorten dealy of next measurement
+	    first_start = false;
+	} else {
+	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
+	}
 }
 
 #define NETWORK_LED_PERIOD_MS 200
@@ -440,11 +444,7 @@ void check_join_status(zb_uint8_t param) {
     if (joined) {
 	// Light off LED and start measurements
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
-	if (first_start) {
-	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(15000)); // Delayed first measurement
-	} else {
-	    do_humidity_measurement(0);
-	}
+	do_humidity_measurement(0);
 	return;
     }
 
