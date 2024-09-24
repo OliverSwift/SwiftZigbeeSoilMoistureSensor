@@ -431,6 +431,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	if (first_start) {
 	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(15000)); // Shorten dealy of next measurement
 	    first_start = false;
+	    force_report_countdown = 0; // Ugly, but this will force report on next call
 	} else {
 	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(PROBE_INTERVAL_MS));
 	}
