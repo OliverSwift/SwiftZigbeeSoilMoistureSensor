@@ -1063,7 +1063,7 @@
       (net 42 "Net-(J3-SWDCLK)") (pinfunction "SWDCLK") (pintype "input") (tstamp 7ecec7d2-65df-47fa-88ce-e33f9a98af78))
     (pad "4" thru_hole oval (at 0 7.62 270) (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask")
       (net 2 "GND") (pinfunction "GND") (pintype "power_in") (tstamp 61142a41-2ea2-4e87-8648-3a9709ebd77d))
-    (model "${KICAD6_3DMODEL_DIR}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x04_P2.54mm_Vertical.wrl"
+    (model "${KICAD6_3DMODEL_DIR}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x04_P2.54mm_Vertical.wrl" hide
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
