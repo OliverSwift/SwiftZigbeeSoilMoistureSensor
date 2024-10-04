@@ -16,6 +16,7 @@
 #include <dk_buttons_and_leds.h>
 #include <ram_pwrdn.h>
 
+#include <stdlib.h>
 #include <zboss_api.h>
 #include <zboss_api_addons.h>
 #include <zigbee/zigbee_error_handler.h>
@@ -374,7 +375,17 @@ void do_humidity_measurement(zb_uint8_t param) {
 	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
 	// Measurement
+	// Found out that multiple measurements must be done. Either probe or adapter hardware are not reliable.
+	// Here we measure voltage every 100ms, if two subsequent values difference is less than 100mV, measurement
+	// is considered stable. At most 10 times in a row.
 	val_mv = adc_probe();
+	k_msleep(100);
+	for(int t = 0; t < 10; t++) {
+	    int32_t val = val_mv;
+	    val_mv = adc_probe();
+	    if (abs(val-val_mv) <= 100) break;
+	    k_msleep(100);
+	}
 
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
 
