@@ -3,7 +3,8 @@ prod
 *.zip
 fp-info-cache
 *.lck
-cad/SwiftSoilMoistureZigbeeSensor/Fab/
-cad/SwiftSoilMoistureZigbeeSensor/*.csv
-cad/SwiftSoilMoistureZigbeeSensor/*.xml
+cad/KiCAD/SwiftSoilMoistureZigbeeSensor/Fab/
+cad/KiCAD/SwiftSoilMoistureZigbeeSensor/*.csv
+cad/KiCAD/SwiftSoilMoistureZigbeeSensor/*.xml
 archives
+releases
