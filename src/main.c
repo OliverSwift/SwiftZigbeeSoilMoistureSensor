@@ -277,9 +277,9 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	// Meanwhile fast LED blinking
 	while(dk_get_buttons() & DK_BTN3_MSK) {
 	    dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
-	    k_msleep(100);
+	    k_msleep(50);
 	    dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
-	    k_msleep(100);
+	    k_msleep(50);
 	}
 	sys_reboot(SYS_REBOOT_COLD);
 	break;
@@ -355,12 +355,11 @@ void do_humidity_measurement(zb_uint8_t param) {
 #define MIN_MV 450
 #define MAX_MV 1825
 #else
-    // These comes from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
+    // These come from Capacitive Soil Moisture Sensor v1.2 powered by 3.3V
 #define MIN_MV 910
 #define MAX_MV 2160
 #endif
 
-#define NB_SAMPLES 10
 #define PROBE_POWERUP_TIME_MS 1000
 #define COUNTDOWN_INIT (4*3600*1000/PROBE_INTERVAL_MS)
 
@@ -369,8 +368,9 @@ void do_humidity_measurement(zb_uint8_t param) {
 	static uint16_t humidity_last = 0xffff;
 	static uint32_t force_report_countdown = COUNTDOWN_INIT; // When falling to 0, 4 hours, force reporting
 
-	// Power on the probe
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 1);
+
+	// Power on the probe
 	gpio_pin_set_dt(&probe_vdd,1);
 	k_msleep(PROBE_POWERUP_TIME_MS); // Wait for output to stabilize
 
@@ -388,14 +388,6 @@ void do_humidity_measurement(zb_uint8_t param) {
 	}
 
 	dk_set_led(ZIGBEE_NETWORK_STATE_LED, 0);
-
-	// Check minimum valid measurement
-	if (val_mv < 100) {
-	    // Don't power off the probe, this might happen at startup
-	    LOG_WRN("Probe certainly unplugged. Retesting in 2 seconds.");
-	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(2000)); // Come back to check in 2 secs
-	    return;
-	}
 
 	// Power off the probe
 	gpio_pin_set_dt(&probe_vdd,0);
@@ -440,7 +432,7 @@ void do_humidity_measurement(zb_uint8_t param) {
 	humidity_last = humidity;
 
 	if (first_start) {
-	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(15000)); // Shorten dealy of next measurement
+	    ZB_SCHEDULE_APP_ALARM(do_humidity_measurement, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(15000)); // Shorten delay of next measurement
 	    first_start = false;
 	    force_report_countdown = 0; // Ugly, but this will force report on next call
 	} else {
@@ -462,7 +454,7 @@ void check_join_status(zb_uint8_t param) {
 
     led_state ^= 1;
 
-    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state^1);
+    dk_set_led(ZIGBEE_NETWORK_STATE_LED, led_state);
 
     ZB_SCHEDULE_APP_ALARM(check_join_status, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(NETWORK_LED_PERIOD_MS));
 }
