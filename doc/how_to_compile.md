@@ -3,7 +3,7 @@
 2. Start it.
 3. Install Toolchain Manager.
 4. Launch Toolchain Manager (Click the Open button)
-5. Install nRF Connect SDK 2.5.0 (tested, it appears that 2.6.1 doesn't work here)
+5. Install nRF Connect SDK 2.6.1 (only valid version for low power)
 6. From the dropdown list select Generate Environment Script, save it to ~/ncs for example
 
 ~/ncs is where everything stands
@@ -12,7 +12,7 @@ Tools for flashing are required, see below nrf Command line Tools.
 
 ## Installing SDK Manually
 
-Not recommanded but working SDK may not be available from nRF Connect for Desktop later on.
+Not recommanded but used SDK may not be available from nRF Connect for Desktop later on.
 
 [Here](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation/install_ncs.html)
 
@@ -24,6 +24,13 @@ then type:
 
 ```
 # make
+```
+
+## Compile for production
+
+```
+# make clean
+# make prod
 ```
 
 ## Nordic's page
@@ -58,8 +65,32 @@ And install Linux version.
 
 # Flashing the device
 
+The board J3 connector pins have Vtref, SWDIO, SWDCLK and GND. The three should be properly wired to any SWD compatible
+programming device (JLink, OB-Jlink, etc).
+
+Cell coin battery MUST NOT be inserted during flashing operation.
+
+## Using nrf52840 DK board for flashing
+
+The PCA10056 comes with SEGGER J-Link OB with a debug out option.
+Here is how to wire the DK to board for flashing:
+
+![Flashing](Flashing.png)
+
+## Flash for dev
+
 With JLink Probe attached to PC and board type:
 
 ```
 # make flash
+```
+
+## Flash for production
+
+Warning: AP protection is applied here. No possible debug or memory readback possible after this.
+
+With JLink Probe attached to PC and board type:
+
+```
+# make flash_prod
 ```

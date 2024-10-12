@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+/*
+ * Copyright (c) 2024 Olivier DEBON
+ *
+ * SPDX-License-Identifier: 0BSD
+ */
+
 #ifndef ZB_SWIFT_DEVICE_H
 #define ZB_SWIFT_DEVICE_H 1
 
@@ -32,7 +38,7 @@
 #define ZB_SWIFT_DEVICE_CLUSTER_NUM \
 	(ZB_SWIFT_DEVICE_IN_CLUSTER_NUM + ZB_SWIFT_DEVICE_OUT_CLUSTER_NUM)
 
-/** Number of attribute for reporting on Swift Device */
+/** Number of attributes for reporting on Swift Device */
 #define ZB_SWIFT_DEVICE_REPORT_ATTR_COUNT (ZB_ZCL_REL_HUMIDITY_MEASUREMENT_REPORT_ATTR_COUNT+ZB_ZCL_POWER_CONFIG_REPORT_ATTR_COUNT)
 
 /** Missing attributes structure declaration **/

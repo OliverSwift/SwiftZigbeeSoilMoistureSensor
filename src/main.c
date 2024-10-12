@@ -4,9 +4,16 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+/*
+ * Copyright (c) 2024 Olivier DEBON
+ *
+ * Modifications on Nordic examples for this application
+ * SPDX-License-Identifier: 0BSD
+ */
+
 /** @file
  *
-* @brief Zigbee application swift.
+ * @brief Zigbee application swift.
  */
 
 #include <zephyr/kernel.h>

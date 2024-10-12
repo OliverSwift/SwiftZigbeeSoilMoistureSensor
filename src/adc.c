@@ -4,6 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*
+ * Copyright (c) 2024 Olivier DEBON
+ *
+ * Modifications on Nordic examples for this application
+ * SPDX-License-Identifier: 0BSD
+ */
+
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
