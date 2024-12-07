@@ -93,3 +93,7 @@ As mentionned earlier, the external probe needs at least 3.3V. The nrf52840 usua
 The measurement operation occurs every 30 minutes. This is configured in _Kconfig_ file. An hour should suffice actually and save more power.
 
 A low filter is applied on subsequent measures. It might be too strong and should be reduced.
+
+Illustration of using _Swift Soil Moisture Sensor_ in Home Assistant:
+
+![HomeAssistant](doc/HomeAssistant.png)
