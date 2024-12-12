@@ -97,3 +97,8 @@ A low filter is applied on subsequent measures. It might be too strong and shoul
 Illustration of using _Swift Soil Moisture Sensor_ in Home Assistant:
 
 ![HomeAssistant](doc/HomeAssistant.png)
+
+## LICENSE
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+[GNU AFFERO GENERAL PUBLIC LICENSE, Version 3, 19 November 2007](LICENCE)

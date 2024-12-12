@@ -8,7 +8,7 @@
  * Copyright (c) 2024 Olivier DEBON
  *
  * Modifications on Nordic examples for this application
- * SPDX-License-Identifier: 0BSD
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 /** @file

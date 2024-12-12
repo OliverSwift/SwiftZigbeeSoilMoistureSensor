@@ -7,7 +7,7 @@
 /*
  * Copyright (c) 2024 Olivier DEBON
  *
- * SPDX-License-Identifier: 0BSD
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 #ifndef ZB_SWIFT_DEVICE_H
