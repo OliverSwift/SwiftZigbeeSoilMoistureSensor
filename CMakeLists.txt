@@ -1,7 +1,6 @@
 #
-# Copyright (c) 2021 Nordic Semiconductor ASA
-#
-# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+# Copyright (c) 2024 Olivier DEBON
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 
 cmake_minimum_required(VERSION 3.20.0)
@@ -14,11 +13,9 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project("Zigbee application Swift Soil Moisture Sensor")
 
-# NORDIC SDK APP START
 target_sources(app PRIVATE
   src/main.c
   src/adc.c
 )
 
 target_include_directories(app PRIVATE include)
-# NORDIC SDK APP END

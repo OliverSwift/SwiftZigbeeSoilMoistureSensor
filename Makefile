@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2024 Olivier DEBON
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+
 SRC=src/main.c src/adc.c include/zb_swift_device.h app.overlay prj.conf
 BIN=build/zephyr/zephyr.bin
 

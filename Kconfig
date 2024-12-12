@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2024 Olivier DEBON
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+
 source "Kconfig.zephyr"
 
 config PROBE_INTERVAL
