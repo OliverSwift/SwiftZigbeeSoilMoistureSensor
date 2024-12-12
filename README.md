@@ -101,4 +101,5 @@ Illustration of using _Swift Soil Moisture Sensor_ in Home Assistant:
 ## LICENSE
 
 SPDX-License-Identifier: AGPL-3.0-or-later
-[GNU AFFERO GENERAL PUBLIC LICENSE, Version 3, 19 November 2007](LICENCE)
+
+[GNU AFFERO GENERAL PUBLIC LICENSE, Version 3, 19 November 2007](LICENSE)
