@@ -35,7 +35,7 @@ Documentation folder includes:
 CAD folder includes:
 
 - [KiCAD](cad/KiCAD) project files
-- [FreeCAD](cad/FreeCAD) projet, a desparate attempt to designing a [box](cad/FreeCAD/box.stl)
+- [FreeCAD](cad/FreeCAD) projet, a desparate attempt to design a [box with a lid](cad/FreeCAD/box+lid.stl).
 
 ## Project details
 
