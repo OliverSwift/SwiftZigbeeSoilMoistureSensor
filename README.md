@@ -70,7 +70,7 @@ Long poll interval is adjusted to 2 minutes instead of default 7 seconds. This d
 
 ### I/O
 
-Two analog inputs are setup, one for probe and one to measure battery voltage. Due to E73 module pinout, peculiar pins were chosen so they are accessible among the castled ones.
+Two analog inputs are setup, one for probe and one to measure battery voltage. Due to E73 module pinout, peculiar pins were chosen so they are accessible among the castellated ones.
 
 The probe uses 10mA to make a humidity measurement. So it is driven by a MOSFET controlled by a GPIO. The probe is therefore powered when used. A serie of measurements are done in a loop until stable.
 
